@@ -147,12 +147,6 @@ export default function Login() {
         transition={{ delay: 0.3, duration: 0.5 }}
         className="w-full max-w-md mx-auto bg-white rounded-3xl p-6 shadow-xl shadow-slate-100 border border-slate-100 my-6"
       >
-        {/* Safe Badge */}
-        <div className="mb-6 flex items-center justify-center gap-2 text-[11px] font-bold text-[#1b6392] bg-blue-50 px-3 py-1 rounded-full w-fit mx-auto">
-          <ShieldCheck className="w-3.5 h-3.5" />
-          Conexão Segura Supabase
-        </div>
-
         {/* TABS FOR MODE SWITCHING */}
         <div className="relative flex bg-slate-100 p-1 rounded-2xl mb-6">
           {/* Entrar Tab */}
