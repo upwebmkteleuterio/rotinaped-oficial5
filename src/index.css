@@ -1,0 +1,97 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Outfit", ui-sans-serif, system-ui, sans-serif;
+  
+  --color-brand-blue: #1b6392;
+  --color-brand-cyan: #74b9ff;
+  --color-bg-primary: #f8fafc;
+  
+  --color-card-blue: #60a5fa;
+  --color-card-green: #e9f5ef;
+  --color-card-pink: #fff1f2;
+  --color-card-yellow: #fef9c3;
+  
+  --radius-4xl: 2rem;
+  --radius-5xl: 2.5rem;
+}
+
+@layer base {
+  body {
+    @apply bg-bg-primary text-slate-800 antialiased;
+    font-family: var(--font-sans);
+  }
+}
+
+.skeleton {
+  @apply bg-slate-200 animate-pulse rounded;
+}
+
+@keyframes bg-gradient-shift {
+  0% { background-color: #1b6392; } /* Blue */
+  25% { background-color: #f472b6; } /* Pink */
+  50% { background-color: #34d399; } /* Greenish/Emerald */
+  75% { background-color: #fb923c; } /* Orange */
+  100% { background-color: #1b6392; } /* Blue */
+}
+
+.animate-header-gradient {
+  animation: bg-gradient-shift 20s ease-in-out infinite;
+}
+
+.mobile-container {
+  @apply min-h-[100dvh] w-full max-w-md mx-auto bg-white shadow-xl relative pb-24 flex flex-col items-stretch outline-none;
+}
+
+/* Custom scrollbar hide */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #e2e8f0;
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #cbd5e1;
+}
+
+.custom-scrollbar-horizontal::-webkit-scrollbar {
+  height: 4px;
+}
+
+.custom-scrollbar-horizontal::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar-horizontal::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+}
+
+.custom-scrollbar-horizontal::-webkit-scrollbar {
+  height: 4px;
+}
+
+.custom-scrollbar-horizontal::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar-horizontal::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+}
