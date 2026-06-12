@@ -20,11 +20,40 @@ import ChatRoom from './pages/ChatRoom';
 import AISupport from './pages/AISupport';
 import TestRunner from './pages/TestRunner';
 import Navbar from './components/layout/Navbar';
+import Login from './pages/Login';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { Baby } from 'lucide-react';
 
 function AppContent() {
+  const { user, loading } = useAuth();
   const location = useLocation();
-  const hideNavbar = location.pathname.startsWith('/community/chat/') || location.pathname.startsWith('/ai-support') || location.pathname === '/dev-test-runner';
 
+  // 1. Loading Screen (Ultra fast, matching design brand)
+  if (loading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50">
+        <div className="flex flex-col items-center space-y-4">
+          <div className="w-16 h-16 bg-[#1b6392] rounded-2xl flex items-center justify-center shadow-lg animate-bounce">
+            <Baby className="w-8 h-8 text-white" />
+          </div>
+          <div className="text-slate-500 text-sm font-medium animate-pulse">
+            Carregando RotinaPed...
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 2. Auth Protection Gate
+  if (!user) {
+    return <Login />;
+  }
+
+  const hideNavbar = location.pathname.startsWith('/community/chat/') || 
+                     location.pathname.startsWith('/ai-support') || 
+                     location.pathname === '/dev-test-runner';
+
+  // 3. Secured Routes
   return (
     <div className={cn("mobile-container shadow-2xl", hideNavbar && "!pb-0 h-[100dvh] max-h-[100dvh] min-h-0 overflow-hidden overscroll-none")}>
       <Routes>
@@ -55,9 +84,11 @@ function AppContent() {
 
 export default function App() {
   return (
-    <Router>
-      <ScrollToTop />
-      <AppContent />
-    </Router>
+    <AuthProvider>
+      <Router>
+        <ScrollToTop />
+        <AppContent />
+      </Router>
+    </AuthProvider>
   );
 }

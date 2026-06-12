@@ -19,16 +19,18 @@ import CustomAIIcon from '../components/common/CustomAIIcon';
 import { motion } from 'motion/react';
 import { cn } from '../lib/utils';
 import { useAppStore } from '../store/useAppStore';
+import { useAuth } from '@/context/AuthContext';
 
 export default function Menu() {
   const navigate = useNavigate();
+  const { signOut } = useAuth();
   const { children, activeChildId, reset } = useAppStore();
   const activeChild = children.find(c => c.id === activeChildId) || children[0];
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     if (window.confirm('Tem certeza que deseja sair? Seus dados locais serão apagados.')) {
       reset();
-      navigate('/profiles');
+      await signOut();
     }
   };
 
