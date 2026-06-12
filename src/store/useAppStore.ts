@@ -1,6 +1,249 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
+import { supabase } from '@/integrations/supabase/client';
 import { Child, Measurement, Vaccine, ChildMilestone, Exam, LibraryArticle, Reminder, MilkLog, AppNotification, DailyTip, FoodLog } from '../types';
+
+// MAPPER FUNCTIONS: SNAKE_CASE (POSTGRES) TO CAMELCASE (TYPESCRIPT)
+
+const mapDbToChild = (db: any): Child => ({
+  id: db.id,
+  name: db.name,
+  birthDate: db.birth_date,
+  photoUrl: db.photo_url || undefined,
+  gender: db.gender,
+  profileType: db.profile_type || undefined,
+  deliveryType: db.delivery_type || undefined,
+  gestationalWeeks: db.gestational_weeks || undefined,
+  gestationalDays: db.gestational_days || undefined,
+  birthWeight: db.birth_weight ? Number(db.birth_weight) : undefined,
+  birthHeight: db.birth_height ? Number(db.birth_height) : undefined,
+  apgar1min: db.apgar_1min || undefined,
+  apgar5min: db.apgar_5min || undefined,
+  feedingType: db.feeding_type || undefined,
+  allergies: db.allergies || undefined,
+  observations: db.observations || undefined,
+  pediatricianName: db.pediatrician_name || undefined,
+  pediatricianPhone: db.pediatrician_phone || undefined,
+  bloodType: db.blood_type || undefined,
+  documentId: db.document_id || undefined,
+  preferredFacilityType: db.preferred_facility_type || undefined,
+  ignoredVaccines: db.ignored_vaccines || [],
+});
+
+const mapChildToDb = (ts: Partial<Child>, userId: string) => ({
+  user_id: userId,
+  name: ts.name,
+  birth_date: ts.birthDate,
+  photo_url: ts.photoUrl,
+  gender: ts.gender,
+  profile_type: ts.profileType,
+  delivery_type: ts.deliveryType,
+  gestational_weeks: ts.gestationalWeeks,
+  gestational_days: ts.gestationalDays,
+  birth_weight: ts.birthWeight,
+  birth_height: ts.birthHeight,
+  apgar_1min: ts.apgar1min,
+  apgar_5min: ts.apgar5min,
+  feeding_type: ts.feedingType,
+  allergies: ts.allergies,
+  observations: ts.observations,
+  pediatrician_name: ts.pediatricianName,
+  pediatrician_phone: ts.pediatricianPhone,
+  blood_type: ts.bloodType,
+  document_id: ts.documentId,
+  preferred_facility_type: ts.preferredFacilityType,
+  ignored_vaccines: ts.ignoredVaccines,
+});
+
+const mapDbToMeasurement = (db: any): Measurement => ({
+  id: db.id,
+  childId: db.child_id,
+  date: db.date,
+  weight: db.weight ? Number(db.weight) : undefined,
+  height: db.height ? Number(db.height) : undefined,
+  imc: db.imc ? Number(db.imc) : undefined,
+  headCircumference: db.head_circumference ? Number(db.head_circumference) : undefined,
+  bloodPressure: db.blood_pressure || undefined,
+  isBirth: db.is_birth || false,
+});
+
+const mapMeasurementToDb = (ts: Partial<Measurement>, userId: string) => ({
+  user_id: userId,
+  child_id: ts.childId,
+  date: ts.date,
+  weight: ts.weight,
+  height: ts.height,
+  imc: ts.imc,
+  head_circumference: ts.headCircumference,
+  blood_pressure: ts.bloodPressure,
+  is_birth: ts.isBirth,
+});
+
+const mapDbToVaccine = (db: any): Vaccine => ({
+  id: db.id,
+  childId: db.child_id,
+  name: db.name,
+  dose: db.dose || undefined,
+  date: db.date,
+  status: db.status as 'pending' | 'completed',
+  lotNumber: db.lot_number || undefined,
+  location: db.location || undefined,
+  photoUrl: db.photo_url || undefined,
+  description: db.description || undefined,
+  facilityType: db.facility_type as 'SUS' | 'PRIVATE' | undefined,
+});
+
+const mapVaccineToDb = (ts: Partial<Vaccine>, userId: string) => ({
+  user_id: userId,
+  child_id: ts.childId,
+  name: ts.name,
+  dose: ts.dose,
+  date: ts.date,
+  status: ts.status,
+  lot_number: ts.lotNumber,
+  location: ts.location,
+  photo_url: ts.photoUrl,
+  description: ts.description,
+  facility_type: ts.facilityType,
+});
+
+const mapDbToMilestone = (db: any): ChildMilestone => ({
+  id: db.id,
+  childId: db.child_id,
+  milestoneItemId: db.milestone_item_id,
+  completed: db.completed || false,
+  completionDate: db.completion_date || undefined,
+});
+
+const mapMilestoneToDb = (ts: Partial<ChildMilestone>, userId: string) => ({
+  user_id: userId,
+  child_id: ts.childId,
+  milestone_item_id: ts.milestoneItemId,
+  completed: ts.completed,
+  completion_date: ts.completionDate,
+});
+
+const mapDbToReminder = (db: any): Reminder => ({
+  id: db.id,
+  type: db.type as 'vitamin_d' | 'ferro' | 'appointment' | 'vaccine' | 'medication',
+  title: db.title,
+  description: db.description || '',
+  date: db.date || undefined,
+  time: db.time,
+  frequency: db.frequency as 'daily' | 'weekly' | 'custom' | 'once',
+  enabled: db.enabled || false,
+});
+
+const mapReminderToDb = (ts: Partial<Reminder>, userId: string) => ({
+  user_id: userId,
+  type: ts.type,
+  title: ts.title,
+  description: ts.description,
+  date: ts.date,
+  time: ts.time,
+  frequency: ts.frequency,
+  enabled: ts.enabled,
+});
+
+const mapDbToMilkLog = (db: any): MilkLog => ({
+  id: db.id,
+  childId: db.child_id,
+  date: db.date,
+  type: db.type as 'breast' | 'bottle',
+  side: db.side as 'left' | 'right' | 'both' | undefined,
+  amount: db.amount ? Number(db.amount) : undefined,
+  duration: db.duration ? Number(db.duration) : undefined,
+  startTime: db.start_time,
+});
+
+const mapMilkLogToDb = (ts: Partial<MilkLog>, userId: string) => ({
+  user_id: userId,
+  child_id: ts.childId,
+  date: ts.date,
+  type: ts.type,
+  side: ts.side,
+  amount: ts.amount,
+  duration: ts.duration,
+  start_time: ts.startTime,
+});
+
+const mapDbToExam = (db: any): Exam => ({
+  id: db.id,
+  childId: db.child_id,
+  name: db.name,
+  category: db.category as 'laboratoriais' | 'infecciosos' | 'imagens' | 'respiratorios' | 'triagens',
+  date: db.date,
+  status: db.status as 'pending' | 'completed' | 'analyzing',
+  laboratory: db.laboratory || undefined,
+  patientName: db.patient_name || undefined,
+  fileUrl: db.file_url || undefined,
+  fileType: db.file_type as 'pdf' | 'image' | undefined,
+  resultDate: db.result_date || undefined,
+});
+
+const mapExamToDb = (ts: Partial<Exam>, userId: string) => ({
+  user_id: userId,
+  child_id: ts.childId,
+  name: ts.name,
+  category: ts.category,
+  date: ts.date,
+  status: ts.status,
+  laboratory: ts.laboratory,
+  patient_name: ts.patientName,
+  file_url: ts.fileUrl,
+  file_type: ts.fileType,
+  result_date: ts.resultDate,
+});
+
+const mapDbToFoodLog = (db: any): FoodLog => ({
+  id: db.id,
+  childId: db.child_id,
+  date: db.date,
+  time: db.time,
+  type: db.type as 'breast' | 'bottle' | 'baby_food' | 'solid',
+  amount: db.amount || '',
+  acceptance: db.acceptance as 'good' | 'medium' | 'refused',
+  carb: db.carb || false,
+  protein: db.protein || false,
+  legume: db.legume || false,
+  vegetables: db.vegetables || false,
+  fruit: db.fruit || false,
+  fat: db.fat || false,
+  meat: db.meat || false,
+  beans: db.beans || false,
+  egg: db.egg || false,
+  hasVitaminC: db.has_vitamin_c || false,
+  ultraprocessedCount: (db.ultraprocessed_count || 0) as 0 | 1 | 2,
+  milkVolume: db.milk_volume ? Number(db.milk_volume) : 0,
+  autonomy: db.autonomy || false,
+  atTable: db.at_table || false,
+  noScreens: db.no_screens || false,
+});
+
+const mapFoodLogToDb = (ts: Partial<FoodLog>, userId: string) => ({
+  user_id: userId,
+  child_id: ts.childId,
+  date: ts.date,
+  time: ts.time,
+  type: ts.type,
+  amount: ts.amount,
+  acceptance: ts.acceptance,
+  carb: ts.carb,
+  protein: ts.protein,
+  legume: ts.legume,
+  vegetables: ts.vegetables,
+  fruit: ts.fruit,
+  fat: ts.fat,
+  meat: ts.meat,
+  beans: ts.beans,
+  egg: ts.egg,
+  has_vitamin_c: ts.hasVitaminC,
+  ultraprocessed_count: ts.ultraprocessedCount,
+  milk_volume: ts.milkVolume,
+  autonomy: ts.autonomy,
+  at_table: ts.atTable,
+  no_screens: ts.noScreens,
+});
 
 interface AppState {
   children: Child[];
@@ -40,42 +283,43 @@ interface AppState {
   };
 
   // Actions
-  addChild: (child: Child) => void;
-  updateChild: (id: string, child: Partial<Child>) => void;
-  deleteChild: (id: string) => void;
+  loadAllData: () => Promise<void>;
+  addChild: (child: Child) => Promise<void>;
+  updateChild: (id: string, child: Partial<Child>) => Promise<void>;
+  deleteChild: (id: string) => Promise<void>;
   setActiveChild: (id: string) => void;
-  addMeasurement: (measurement: Measurement) => void;
-  updateMeasurement: (id: string, measurement: Partial<Measurement>) => void;
-  deleteMeasurement: (id: string) => void;
-  addVaccine: (vaccine: Vaccine) => void;
-  updateVaccine: (id: string, vaccine: Partial<Vaccine>) => void;
-  deleteVaccine: (id: string) => void;
-  addExam: (exam: Exam) => void;
-  updateExam: (id: string, exam: Partial<Exam>) => void;
-  deleteExam: (id: string) => void;
+  addMeasurement: (measurement: Measurement) => Promise<void>;
+  updateMeasurement: (id: string, measurement: Partial<Measurement>) => Promise<void>;
+  deleteMeasurement: (id: string) => Promise<void>;
+  addVaccine: (vaccine: Vaccine) => Promise<void>;
+  updateVaccine: (id: string, vaccine: Partial<Vaccine>) => Promise<void>;
+  deleteVaccine: (id: string) => Promise<void>;
+  addExam: (exam: Exam) => Promise<void>;
+  updateExam: (id: string, exam: Partial<Exam>) => Promise<void>;
+  deleteExam: (id: string) => Promise<void>;
   toggleAddExam: (open: boolean) => void;
-  addReminder: (reminder: Reminder) => void;
-  addMilkLog: (log: MilkLog) => void;
-  deleteMilkLog: (id: string) => void;
-  addFoodLog: (log: FoodLog) => void;
-  deleteFoodLog: (id: string) => void;
-  updateFoodLog: (id: string, log: Partial<FoodLog>) => void;
-  updateFoodChecklist: (childId: string, checklist: Partial<{ acceptsPieces: boolean; usesPincer: boolean; takesToMouth: boolean; chewsWell: boolean; }>) => void;
-  updateReminder: (id: string, reminder: Partial<Reminder>) => void;
-  deleteReminder: (id: string) => void;
+  addReminder: (reminder: Reminder) => Promise<void>;
+  addMilkLog: (log: MilkLog) => Promise<void>;
+  deleteMilkLog: (id: string) => Promise<void>;
+  addFoodLog: (log: FoodLog) => Promise<void>;
+  deleteFoodLog: (id: string) => Promise<void>;
+  updateFoodLog: (id: string, log: Partial<FoodLog>) => Promise<void>;
+  updateFoodChecklist: (childId: string, checklist: Partial<{ acceptsPieces: boolean; usesPincer: boolean; takesToMouth: boolean; chewsWell: boolean; }>) => Promise<void>;
+  updateReminder: (id: string, reminder: Partial<Reminder>) => Promise<void>;
+  deleteReminder: (id: string) => Promise<void>;
   setGrowthTab: (tab: AppState['ui']['growth']['activeTab']) => void;
   toggleAddMeasurement: (open: boolean) => void;
   setEditingMeasurement: (id: string | null) => void;
-  toggleMilestone: (childId: string, milestoneItemId: string) => void;
+  toggleMilestone: (childId: string, milestoneItemId: string) => Promise<void>;
   setSelectedPeriod: (period: number) => void;
   markNotificationAsRead: (id: string) => void;
   toggleNotifications: (open: boolean) => void;
-  addVaccinesBatch: (vaccines: Vaccine[]) => void;
+  addVaccinesBatch: (vaccines: Vaccine[]) => Promise<void>;
   addAiMessage: (childId: string, message: { id: string; text: string; sender: 'user' | 'ai'; timestamp: string; }) => void;
   reset: () => void;
 }
 
-// Storage abstraction for later Supabase migration
+// Storage wrapper for Zustand
 const storageWrapper = {
   getItem: (name: string) => localStorage.getItem(name),
   setItem: (name: string, value: string) => localStorage.setItem(name, value),
@@ -84,150 +328,42 @@ const storageWrapper = {
 
 export const useAppStore = create<AppState>()(
   persist(
-    (set) => ({
-      children: [
-        { 
-          id: 'theo-id', 
-          name: 'Theo', 
-          birthDate: '2025-10-01', 
-          gender: 'male', 
-          birthWeight: 3500, 
-          birthHeight: 50, 
-          photoUrl: 'https://img.freepik.com/fotos-gratis/menino-sorridente-retrato-do-rosto-de-perto_53876-153276.jpg' 
-        },
-        { 
-          id: 'alice-id', 
-          name: 'Alice', 
-          birthDate: '2025-09-15', 
-          gender: 'female', 
-          birthWeight: 3200, 
-          birthHeight: 49, 
-          photoUrl: 'https://f.i.uol.com.br/fotografia/2017/12/12/15131107815a303cfd361af_1513110781_1x1_md.jpg' 
-        },
-      ],
-      activeChildId: 'theo-id',
-      measurements: [
-        { id: '1', childId: 'theo-id', date: '2025-10-01', weight: 3.5, height: 50, isBirth: true, imc: 14.0 },
-        { id: '2', childId: 'theo-id', date: '2026-04-15', weight: 8.4, height: 71, imc: 16.7 },
-        { id: 'a1', childId: 'alice-id', date: '2025-09-15', weight: 3.2, height: 49, isBirth: true, imc: 13.3 },
-        { id: 'a2', childId: 'alice-id', date: '2026-04-10', weight: 7.8, height: 69, imc: 16.4 },
-      ],
-      vaccines: [
-        { 
-          id: 'v1', 
-          childId: 'theo-id', 
-          name: 'Pentavalente', 
-          dose: 'Reforço',
-          date: '2026-04-20', 
-          status: 'pending' 
-        },
-        { 
-          id: 'v2', 
-          childId: 'alice-id', 
-          name: 'Meningocócica ACWY', 
-          date: '2026-05-15', 
-          status: 'pending' 
-        },
-        { 
-          id: 'v3', 
-          childId: 'theo-id', 
-          name: 'BCG', 
-          date: '2024-08-12', 
-          status: 'completed' 
-        },
-      ],
-      childMilestones: [
-        { id: 'cm1', childId: 'theo-id', milestoneItemId: '6m-1', completed: true },
-        { id: 'cm2', childId: 'theo-id', milestoneItemId: '6m-2', completed: true },
-        { id: 'cm3', childId: 'theo-id', milestoneItemId: '6m-3', completed: true },
-      ],
-      exams: [
-        { 
-          id: 'e1', 
-          childId: 'theo-id', 
-          name: 'Hemograma Completo', 
-          category: 'laboratoriais', 
-          date: '2023-10-12', 
-          status: 'completed',
-          laboratory: 'LABORATÓRIO SÃO LUCAS',
-          patientName: 'THEO SILVA',
-          fileUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
-          fileType: 'pdf'
-        },
-        { 
-          id: 'e2', 
-          childId: 'theo-id', 
-          name: 'Vitamina D (25-OH)', 
-          category: 'laboratoriais', 
-          date: '2023-10-05', 
-          status: 'analyzing',
-          laboratory: 'CENTRO DE DIAGNÓSTICO',
-          resultDate: '2023-10-20'
-        },
-        { 
-          id: 'e3', 
-          childId: 'theo-id', 
-          name: 'Raio-X de Tórax', 
-          category: 'imagens', 
-          date: '2023-09-28', 
-          status: 'completed',
-          laboratory: 'HOSPITAL INFANTIL',
-          fileUrl: 'https://picsum.photos/seed/xray/600/800',
-          fileType: 'image'
-        }
-      ],
+    (set, get) => ({
+      children: [],
+      activeChildId: null,
+      measurements: [],
+      vaccines: [],
+      childMilestones: [],
+      exams: [],
       libraryArticles: [
         {
-          id: 'a1',
-          title: 'Cuidados com a Febre: Guia Rápido',
-          summary: 'Saiba quando medicar e os sinais de alerta que exigem atenção médica imediata.',
-          category: 'febre',
-          content: '### O que é a febre?\nA febre é um sinal de que o corpo está lutando contra uma infecção. Não é uma doença em si, mas um sintoma.\n\n### Quando medicar?\n- Temperatura acima de **37.8°C**.\n- Se a criança estiver muito prostrada ou irritada.\n- Sempre siga a orientação do seu pediatra quanto à dosagem.\n\n### Sinais de Alerta (Vá ao Pronto Socorro):\n1. Febre em bebês menores de 3 meses.\n2. Dificuldade para respirar.\n3. Manchas vermelhas na pele.\n4. Pescoço rígido.',
-          imageUrl: 'https://picsum.photos/seed/fever/800/600',
-          authoritativeSources: ['SBP', 'SBIm'],
+          id: 'art-intro',
+          title: 'Introdução Alimentar do Bebê',
+          summary: 'Guia completo de introdução aos sólidos passo a passo com sinais de prontidão.',
+          category: 'alimentacao',
+          content: '### Introdução Alimentar\nAos 6 meses, o bebê apresenta sinais de prontidão fundamentais:\n- **Sustentação do tronco:** Sentar sem apoio ou com mínimo apoio.\n- **Reflexo de protrusão diminuído:** Não empurrar a comida para fora com a língua.\n- **Interesse pelos alimentos:** Olhar, tentar pegar e levar coisas à boca.\n\n### Como oferecer:\nComece com consistência amassada (nunca liquidificada ou peneirada). Ofereça variedade de grupos alimentares (carboidratos, proteínas, legumes/hortaliças e frutas).\n\n### Métodos:\n- **Tradicional:** Papinha oferecida na colher.\n- **BLW (Baby-Led Weaning):** Alimentos em pedaços e formatos seguros para o bebê pegar e comer sozinho.',
+          imageUrl: 'https://picsum.photos/seed/babyfood/800/600',
+          authoritativeSources: ['SBP', 'OMS'],
           isFeatured: true
         },
         {
-          id: 'a2',
-          title: 'Guia de Lavagem Nasal',
-          summary: 'Passo a passo seguro para higienização nasal em bebês e crianças.',
-          category: 'lavagem_nasal',
-          content: '### Por que fazer?\nManter as vias aéreas limpas reduz riscos de otite, sinusite e melhora o sono e a alimentação.\n\n### Passo a passo:\n1. Utilize **soro fisiológico** em temperatura ambiente ou levemente morno.\n2. Posicione a criança sentada ou levemente inclinada para frente.\n3. Aplique com seringa ou frasco apropriado sem pressão excessiva.\n\n### Dica de Ouro:\nInicie sempre pelo lado que parece mais "limpo" para facilitar o fluxo.',
-          imageUrl: 'https://picsum.photos/seed/nose/800/600',
-          authoritativeSources: ['SBP']
-        },
-        {
-          id: 'a3',
-          title: 'Introdução Alimentar',
-          summary: 'Primeiras papinhas e método BLW: como começar com segurança.',
-          category: 'alimentacao',
-          content: '### Quando começar?\nAos **6 meses**, quando o bebê apresenta sinais de prontidão (sentar sem apoio, interesse por comida, perda do reflexo de extrusão).\n\n### O que oferecer?\n- Legumes, frutas, cereais, tubérculos, ovos e carnes.\n- Evite açúcar, mel e sal até os 2 anos.\n\n### Métodos:\n- **Tradicional:** Papinhas oferecidas na colher.\n- **BLW:** Pedaços inteiros para o bebê pegar sozinho.',
-          imageUrl: 'https://sacadademae.com.br/wp-content/uploads/2018/06/shutterstock_430230868.jpg',
-          authoritativeSources: ['SBP', 'OMS']
-        },
-        {
-          id: 'a4',
+          id: 'art-sleep',
           title: 'Sono e Higiene do Sono',
           summary: 'Dicas práticas para estabelecer uma rotina saudável e melhorar as noites da família.',
           category: 'sono',
-          content: '### A importância do sono\nO sono é fundamental para o desenvolvimento cerebral e crescimento físico (liberação do GH).\n\n### Higiene do Sono:\n- **Ambiente:** Escuro, silencioso e com temperatura agradável.\n- **Rotina:** Atividades calmas antes de dormir (banho morno, massagem, leitura).\n- **Horários:** Tente manter uma constância nos horários de sonecas e sono noturno.\n\n### Dica:\nEvite telas (TV, Celular) pelo menos 1 hora antes do sono.',
+          content: '### A importância do sono\nO sono é fundamental para o desenvolvimento cerebral e crescimento físico (liberação do GH).\n\n### Higiene do Sono:\n- **Ambiente:** Escuro, silencioso e com temperatura agradável.\n- **Rotina:** Atividades calmas antes de dormir (banho morno, massagem, leitura).\n- **Horários:** Tente manter uma constância nos horários de sonecas e sono noturno.\n- **Dica:** Evite telas (TV, Celular) pelo menos 1 hora antes do sono.',
           imageUrl: 'https://picsum.photos/seed/sleep/800/600',
           authoritativeSources: ['SBP']
         }
       ],
-      reminders: [
-        { id: 'rem-vaccine', type: 'vaccine', title: 'Lembrete de Vacina', description: 'Alerta com 7 dias de antecedência', time: '08:00', frequency: 'once', enabled: true },
-      ],
+      reminders: [],
       milkLogs: [],
       foodLogs: [],
       foodChecklist: {},
-      notifications: [
-        { id: 'n1', title: 'Vacina Pendente', message: 'Theo tem o reforço de Pentavalente agendado para o dia 20/04.', date: '2026-04-20', isRead: false, type: 'vaccine' },
-        { id: 'n2', title: 'Vacina para Alice', message: 'Alice tem Meningocócica ACWY agendada para 15/05.', date: '2026-04-22', isRead: false, type: 'vaccine' },
-        { id: 'n3', title: 'Exame Pronto!', message: 'O resultado do Hemograma do Theo já está disponível na central.', date: '2026-04-24', isRead: false, type: 'exam' },
-        { id: 'n4', title: 'Dica do Dia', message: 'A introdução alimentar deve ser feita com paciência. Confira novas receitas!', date: '2026-04-24', isRead: true, type: 'tip' },
-      ],
       aiChatHistory: {},
+      notifications: [
+        { id: 'n4', title: 'Dica do Dia', message: 'A introdução alimentar deve ser feita com paciência. Confira novas receitas!', date: '2026-04-24', isRead: false, type: 'tip' },
+      ],
       dailyTips: [
         { id: 't1', title: 'Introdução Alimentar: Por onde começar?', description: 'Aos 6 meses, o bebê apresenta sinais de prontidão. Comece com frutas e legumes amassados.', imageUrl: 'https://sacadademae.com.br/wp-content/uploads/2018/06/shutterstock_430230868.jpg', category: 'Alimentação' },
         { id: 't2', title: 'Higiene do Sono', description: 'Um ambiente escuro e silencioso ajuda na liberação de melatonina para o bebê.', imageUrl: 'https://images.unsplash.com/photo-1520206159849-c9bc683e2101?auto=format&fit=crop&q=80&w=800', category: 'Sono' },
@@ -253,63 +389,166 @@ export const useAppStore = create<AppState>()(
         },
       },
 
-      addChild: (child) => set((state) => {
-        const newMeasurements = [...state.measurements];
+      // HYDRATE ALL USER DATA FROM SUPABASE
+      loadAllData: async () => {
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (!session) return;
+
+          // Parallel query execution
+          const [
+            childrenRes,
+            measurementsRes,
+            vaccinesRes,
+            milestonesRes,
+            remindersRes,
+            milkLogsRes,
+            foodLogsRes,
+            examsRes
+          ] = await Promise.all([
+            supabase.from('children').select('*').order('created_at', { ascending: true }),
+            supabase.from('measurements').select('*').order('date', { ascending: true }),
+            supabase.from('vaccines').select('*').order('date', { ascending: true }),
+            supabase.from('child_milestones').select('*'),
+            supabase.from('reminders').select('*').order('created_at', { ascending: false }),
+            supabase.from('milk_logs').select('*').order('date', { ascending: false }),
+            supabase.from('food_logs').select('*').order('date', { ascending: false }),
+            supabase.from('exams').select('*').order('date', { ascending: false })
+          ]);
+
+          if (childrenRes.error) throw childrenRes.error;
+
+          const mappedChildren = (childrenRes.data || []).map(mapDbToChild);
+          const mappedMeasurements = (measurementsRes.data || []).map(mapDbToMeasurement);
+          const mappedVaccines = (vaccinesRes.data || []).map(mapDbToVaccine);
+          const mappedMilestones = (milestonesRes.data || []).map(mapDbToMilestone);
+          const mappedReminders = (remindersRes.data || []).map(mapDbToReminder);
+          const mappedMilkLogs = (milkLogsRes.data || []).map(mapDbToMilkLog);
+          const mappedFoodLogs = (foodLogsRes.data || []).map(mapDbToFoodLog);
+          const mappedExams = (examsRes.data || []).map(mapDbToExam);
+
+          // Populate the foodChecklist record from JSONB inside the children rows
+          const foodChecklistRecord: Record<string, any> = {};
+          (childrenRes.data || []).forEach((c: any) => {
+            if (c.food_checklist) {
+              foodChecklistRecord[c.id] = c.food_checklist;
+            }
+          });
+
+          set({
+            children: mappedChildren,
+            measurements: mappedMeasurements,
+            vaccines: mappedVaccines,
+            childMilestones: mappedMilestones,
+            reminders: mappedReminders,
+            milkLogs: mappedMilkLogs,
+            foodLogs: mappedFoodLogs,
+            exams: mappedExams,
+            foodChecklist: foodChecklistRecord,
+            activeChildId: get().activeChildId || (mappedChildren.length > 0 ? mappedChildren[0].id : null)
+          });
+        } catch (error) {
+          console.error('[loadAllData] Error restoring user state from Supabase:', error);
+        }
+      },
+
+      addChild: async (child) => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+        const userId = session.user.id;
+        const childId = child.id || crypto.randomUUID();
+        const finalChild = { ...child, id: childId };
+
+        // 1. Optimistic Update
+        set((state) => ({
+          children: [...state.children, finalChild],
+          activeChildId: state.activeChildId ? state.activeChildId : childId
+        }));
+
+        // 2. Database Sync
+        const dbChild = mapChildToDb(finalChild, userId);
+        const { error } = await supabase.from('children').insert({ ...dbChild, id: childId });
+        
+        if (error) {
+          console.error('Error adding child to Supabase:', error);
+          // Rollback
+          set((state) => ({
+            children: state.children.filter(c => c.id !== childId),
+            activeChildId: state.activeChildId === childId ? null : state.activeChildId
+          }));
+          return;
+        }
+
+        // Add Birth Measurement if requested
         if (child.birthWeight || child.birthHeight) {
           const birthWeightKg = child.birthWeight ? child.birthWeight / 1000 : undefined;
-          newMeasurements.push({
+          const newM = {
             id: crypto.randomUUID(),
-            childId: child.id,
+            childId: childId,
             date: child.birthDate,
             weight: birthWeightKg,
             height: child.birthHeight,
             headCircumference: undefined,
             isBirth: true,
             imc: (birthWeightKg && child.birthHeight) ? parseFloat((birthWeightKg / ((child.birthHeight / 100) * (child.birthHeight / 100))).toFixed(1)) : undefined
-          });
+          };
+          await get().addMeasurement(newM);
         }
-        return { 
-          children: [...state.children, child],
-          measurements: newMeasurements
-        };
-      }),
-      updateChild: (id, c) => set((state) => {
-        const childBefore = state.children.find(child => child.id === id);
-        const newChildren = state.children.map((item) => item.id === id ? { ...item, ...c } : item);
-        const updatedChild = newChildren.find(child => child.id === id);
-        
-        if (!updatedChild) return { children: state.children };
+      },
 
-        let newMeasurements = [...state.measurements];
-        
-        // Find if we have a birth measurement
+      updateChild: async (id, c) => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+        const userId = session.user.id;
+
+        const previousChildren = get().children;
+        const childBefore = previousChildren.find(child => child.id === id);
+
+        // 1. Optimistic Update
+        set((state) => ({
+          children: state.children.map((item) => item.id === id ? { ...item, ...c } : item)
+        }));
+
+        // 2. Database Sync
+        const updatedChildObj = { ...childBefore, ...c } as Child;
+        const dbChild = mapChildToDb(updatedChildObj, userId);
+        const { error } = await supabase.from('children').update(dbChild).eq('id', id);
+
+        if (error) {
+          console.error('Error updating child in Supabase:', error);
+          set({ children: previousChildren });
+          return;
+        }
+
+        // Handle Birth Measurement Update
+        const updatedChild = get().children.find(child => child.id === id);
+        if (!updatedChild) return;
+
+        let newMeasurements = [...get().measurements];
         let birthMeasurementIndex = newMeasurements.findIndex(m => m.childId === id && m.isBirth);
-        
-        // Fallback for older data: find measurement on birth date
         if (birthMeasurementIndex === -1 && childBefore) {
           birthMeasurementIndex = newMeasurements.findIndex(m => m.childId === id && m.date === childBefore.birthDate);
         }
 
         if (birthMeasurementIndex !== -1) {
-          // Update existing
           const m = newMeasurements[birthMeasurementIndex];
           const updatedWeightGrams = updatedChild.birthWeight;
           const updatedWeightKg = updatedWeightGrams ? updatedWeightGrams / 1000 : undefined;
           const updatedHeight = updatedChild.birthHeight;
           const updatedDate = updatedChild.birthDate;
-          
-          newMeasurements[birthMeasurementIndex] = {
+
+          const updatedM = {
             ...m,
-            isBirth: true, // Auto-repair the flag
+            isBirth: true,
             weight: updatedWeightKg,
             height: updatedHeight,
             date: updatedDate,
             imc: (updatedWeightKg && updatedHeight) ? parseFloat((updatedWeightKg / ((updatedHeight / 100) * (updatedHeight / 100))).toFixed(1)) : undefined
           };
+          await get().updateMeasurement(m.id, updatedM);
         } else if (updatedChild.birthWeight || updatedChild.birthHeight) {
-          // Create if missing
           const birthWeightKg = updatedChild.birthWeight ? updatedChild.birthWeight / 1000 : undefined;
-          newMeasurements.push({
+          const newM = {
             id: crypto.randomUUID(),
             childId: id,
             date: updatedChild.birthDate,
@@ -317,110 +556,494 @@ export const useAppStore = create<AppState>()(
             height: updatedChild.birthHeight,
             isBirth: true,
             imc: (birthWeightKg && updatedChild.birthHeight) ? parseFloat((birthWeightKg / ((updatedChild.birthHeight / 100) * (updatedChild.birthHeight / 100))).toFixed(1)) : undefined
-          });
+          };
+          await get().addMeasurement(newM);
         }
+      },
 
-        return {
-          children: newChildren,
-          measurements: newMeasurements
-        };
-      }),
-      deleteChild: (id) => set((state) => ({
-        children: state.children.filter((item) => item.id !== id),
-        activeChildId: state.activeChildId === id ? (state.children.length > 1 ? state.children.find(c => c.id !== id)?.id || null : null) : state.activeChildId
-      })),
+      deleteChild: async (id) => {
+        const previousChildren = get().children;
+        const previousActive = get().activeChildId;
+
+        // 1. Optimistic Update
+        set((state) => ({
+          children: state.children.filter((item) => item.id !== id),
+          activeChildId: state.activeChildId === id ? (state.children.length > 1 ? state.children.find(c => c.id !== id)?.id || null : null) : state.activeChildId
+        }));
+
+        // 2. Database Sync
+        const { error } = await supabase.from('children').delete().eq('id', id);
+        if (error) {
+          console.error('Error deleting child from Supabase:', error);
+          set({ children: previousChildren, activeChildId: previousActive });
+        }
+      },
+
       setActiveChild: (id) => set({ activeChildId: id }),
-      addMeasurement: (m) => set((state) => ({ measurements: [...state.measurements, m] })),
-      updateMeasurement: (id, m) => set((state) => ({
-        measurements: state.measurements.map((item) => item.id === id ? { ...item, ...m } : item)
-      })),
-      deleteMeasurement: (id) => set((state) => ({
-        measurements: state.measurements.filter((item) => item.id !== id)
-      })),
+
+      addMeasurement: async (m) => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+        const userId = session.user.id;
+        const measurementId = m.id || crypto.randomUUID();
+        const finalMeasurement = { ...m, id: measurementId };
+
+        // 1. Optimistic Update
+        set((state) => ({ measurements: [...state.measurements, finalMeasurement] }));
+
+        // 2. Database Sync
+        const dbM = mapMeasurementToDb(finalMeasurement, userId);
+        const { error } = await supabase.from('measurements').insert({ ...dbM, id: measurementId });
+        
+        if (error) {
+          console.error('Error saving measurement to Supabase:', error);
+          set((state) => ({ measurements: state.measurements.filter(item => item.id !== measurementId) }));
+        }
+      },
+
+      updateMeasurement: async (id, m) => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+        const userId = session.user.id;
+
+        const previousMeasurements = get().measurements;
+        const beforeObj = previousMeasurements.find(item => item.id === id);
+
+        // 1. Optimistic Update
+        set((state) => ({
+          measurements: state.measurements.map((item) => item.id === id ? { ...item, ...m } : item)
+        }));
+
+        // 2. Database Sync
+        const updatedM = { ...beforeObj, ...m } as Measurement;
+        const dbM = mapMeasurementToDb(updatedM, userId);
+        const { error } = await supabase.from('measurements').update(dbM).eq('id', id);
+
+        if (error) {
+          console.error('Error updating measurement in Supabase:', error);
+          set({ measurements: previousMeasurements });
+        }
+      },
+
+      deleteMeasurement: async (id) => {
+        const previousMeasurements = get().measurements;
+
+        // 1. Optimistic Update
+        set((state) => ({
+          measurements: state.measurements.filter((item) => item.id !== id)
+        }));
+
+        // 2. Database Sync
+        const { error } = await supabase.from('measurements').delete().eq('id', id);
+        if (error) {
+          console.error('Error deleting measurement in Supabase:', error);
+          set({ measurements: previousMeasurements });
+        }
+      },
+
       setGrowthTab: (tab) => set((state) => ({ ui: { ...state.ui, growth: { ...state.ui.growth, activeTab: tab } } })),
       toggleAddMeasurement: (open) => set((state) => ({ ui: { ...state.ui, growth: { ...state.ui.growth, isAddMeasurementOpen: open } } })),
       setEditingMeasurement: (id) => set((state) => ({ ui: { ...state.ui, growth: { ...state.ui.growth, editingMeasurementId: id } } })),
-      addVaccine: (v) => set((state) => ({ vaccines: [...state.vaccines, v] })),
-      updateVaccine: (id, v) => set((state) => ({
-        vaccines: state.vaccines.map((item) => item.id === id ? { ...item, ...v } : item)
-      })),
-      deleteVaccine: (id) => set((state) => ({
-        vaccines: state.vaccines.filter((item) => item.id !== id)
-      })),
-      addExam: (e) => set((state) => ({ exams: [...state.exams, e] })),
-      updateExam: (id, e) => set((state) => ({
-        exams: state.exams.map((item) => item.id === id ? { ...item, ...e } : item)
-      })),
-      deleteExam: (id) => set((state) => ({
-        exams: state.exams.filter((item) => item.id !== id)
-      })),
-      toggleAddExam: (open) => set((state) => ({ ui: { ...state.ui, exams: { isAddModalOpen: open } } })),
-      addReminder: (reminder) => set((state) => ({ reminders: [reminder, ...state.reminders] })),
-      addMilkLog: (log) => set((state) => ({ milkLogs: [log, ...state.milkLogs] })),
-      deleteMilkLog: (id) => set((state) => ({
-        milkLogs: state.milkLogs.filter((item) => item.id !== id)
-      })),
-      addFoodLog: (log) => set((state) => ({ foodLogs: [log, ...state.foodLogs] })),
-      deleteFoodLog: (id) => set((state) => ({
-        foodLogs: state.foodLogs.filter((item) => item.id !== id)
-      })),
-      updateFoodLog: (id, updatedLog) => set((state) => ({
-        foodLogs: state.foodLogs.map((item) => item.id === id ? { ...item, ...updatedLog } : item)
-      })),
-      updateFoodChecklist: (childId, checklist) => set((state) => ({
-        foodChecklist: {
-          ...state.foodChecklist,
-          [childId]: {
-            acceptsPieces: false,
-            usesPincer: false,
-            takesToMouth: false,
-            chewsWell: false,
-            ...(state.foodChecklist[childId] || {}),
-            ...checklist,
-          }
+
+      addVaccine: async (v) => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+        const userId = session.user.id;
+        const vaccineId = v.id || crypto.randomUUID();
+        const finalVaccine = { ...v, id: vaccineId };
+
+        // 1. Optimistic Update
+        set((state) => ({ vaccines: [...state.vaccines, finalVaccine] }));
+
+        // 2. Database Sync
+        const dbV = mapVaccineToDb(finalVaccine, userId);
+        const { error } = await supabase.from('vaccines').insert({ ...dbV, id: vaccineId });
+        
+        if (error) {
+          console.error('Error saving vaccine to Supabase:', error);
+          set((state) => ({ vaccines: state.vaccines.filter(item => item.id !== vaccineId) }));
         }
-      })),
-      updateReminder: (id, r) => set((state) => ({
-        reminders: state.reminders.map((item) => item.id === id ? { ...item, ...r } : item)
-      })),
-      deleteReminder: (id) => set((state) => ({
-        reminders: state.reminders.filter((item) => item.id !== id)
-      })),
+      },
+
+      updateVaccine: async (id, v) => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+        const userId = session.user.id;
+
+        const previousVaccines = get().vaccines;
+        const beforeObj = previousVaccines.find(item => item.id === id);
+
+        // 1. Optimistic Update
+        set((state) => ({
+          vaccines: state.vaccines.map((item) => item.id === id ? { ...item, ...v } : item)
+        }));
+
+        // 2. Database Sync
+        const updatedV = { ...beforeObj, ...v } as Vaccine;
+        const dbV = mapVaccineToDb(updatedV, userId);
+        const { error } = await supabase.from('vaccines').update(dbV).eq('id', id);
+
+        if (error) {
+          console.error('Error updating vaccine in Supabase:', error);
+          set({ vaccines: previousVaccines });
+        }
+      },
+
+      deleteVaccine: async (id) => {
+        const previousVaccines = get().vaccines;
+
+        // 1. Optimistic Update
+        set((state) => ({
+          vaccines: state.vaccines.filter((item) => item.id !== id)
+        }));
+
+        // 2. Database Sync
+        const { error } = await supabase.from('vaccines').delete().eq('id', id);
+        if (error) {
+          console.error('Error deleting vaccine in Supabase:', error);
+          set({ vaccines: previousVaccines });
+        }
+      },
+
+      addExam: async (e) => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+        const userId = session.user.id;
+        const examId = e.id || crypto.randomUUID();
+        const finalExam = { ...e, id: examId };
+
+        // 1. Optimistic Update
+        set((state) => ({ exams: [...state.exams, finalExam] }));
+
+        // 2. Database Sync
+        const dbE = mapExamToDb(finalExam, userId);
+        const { error } = await supabase.from('exams').insert({ ...dbE, id: examId });
+        
+        if (error) {
+          console.error('Error saving exam to Supabase:', error);
+          set((state) => ({ exams: state.exams.filter(item => item.id !== examId) }));
+        }
+      },
+
+      updateExam: async (id, e) => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+        const userId = session.user.id;
+
+        const previousExams = get().exams;
+        const beforeObj = previousExams.find(item => item.id === id);
+
+        // 1. Optimistic Update
+        set((state) => ({
+          exams: state.exams.map((item) => item.id === id ? { ...item, ...e } : item)
+        }));
+
+        // 2. Database Sync
+        const updatedE = { ...beforeObj, ...e } as Exam;
+        const dbE = mapExamToDb(updatedE, userId);
+        const { error } = await supabase.from('exams').update(dbE).eq('id', id);
+
+        if (error) {
+          console.error('Error updating exam in Supabase:', error);
+          set({ exams: previousExams });
+        }
+      },
+
+      deleteExam: async (id) => {
+        const previousExams = get().exams;
+
+        // 1. Optimistic Update
+        set((state) => ({
+          exams: state.exams.filter((item) => item.id !== id)
+        }));
+
+        // 2. Database Sync
+        const { error } = await supabase.from('exams').delete().eq('id', id);
+        if (error) {
+          console.error('Error deleting exam in Supabase:', error);
+          set({ exams: previousExams });
+        }
+      },
+
+      toggleAddExam: (open) => set((state) => ({ ui: { ...state.ui, exams: { isAddModalOpen: open } } })),
+
+      addReminder: async (reminder) => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+        const userId = session.user.id;
+        const reminderId = reminder.id || crypto.randomUUID();
+        const finalReminder = { ...reminder, id: reminderId };
+
+        // 1. Optimistic Update
+        set((state) => ({ reminders: [finalReminder, ...state.reminders] }));
+
+        // 2. Database Sync
+        const dbR = mapReminderToDb(finalReminder, userId);
+        const { error } = await supabase.from('reminders').insert({ ...dbR, id: reminderId });
+        
+        if (error) {
+          console.error('Error saving reminder to Supabase:', error);
+          set((state) => ({ reminders: state.reminders.filter(item => item.id !== reminderId) }));
+        }
+      },
+
+      addMilkLog: async (log) => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+        const userId = session.user.id;
+        const logId = log.id || crypto.randomUUID();
+        const finalLog = { ...log, id: logId };
+
+        // 1. Optimistic Update
+        set((state) => ({ milkLogs: [finalLog, ...state.milkLogs] }));
+
+        // 2. Database Sync
+        const dbLog = mapMilkLogToDb(finalLog, userId);
+        const { error } = await supabase.from('milk_logs').insert({ ...dbLog, id: logId });
+        
+        if (error) {
+          console.error('Error saving milk log to Supabase:', error);
+          set((state) => ({ milkLogs: state.milkLogs.filter(item => item.id !== logId) }));
+        }
+      },
+
+      deleteMilkLog: async (id) => {
+        const previousMilkLogs = get().milkLogs;
+
+        // 1. Optimistic Update
+        set((state) => ({ milkLogs: state.milkLogs.filter((item) => item.id !== id) }));
+
+        // 2. Database Sync
+        const { error } = await supabase.from('milk_logs').delete().eq('id', id);
+        if (error) {
+          console.error('Error deleting milk log in Supabase:', error);
+          set({ milkLogs: previousMilkLogs });
+        }
+      },
+
+      addFoodLog: async (log) => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+        const userId = session.user.id;
+        const logId = log.id || crypto.randomUUID();
+        const finalLog = { ...log, id: logId };
+
+        // 1. Optimistic Update
+        set((state) => ({ foodLogs: [finalLog, ...state.foodLogs] }));
+
+        // 2. Database Sync
+        const dbLog = mapFoodLogToDb(finalLog, userId);
+        const { error } = await supabase.from('food_logs').insert({ ...dbLog, id: logId });
+        
+        if (error) {
+          console.error('Error saving food log to Supabase:', error);
+          set((state) => ({ foodLogs: state.foodLogs.filter(item => item.id !== logId) }));
+        }
+      },
+
+      deleteFoodLog: async (id) => {
+        const previousFoodLogs = get().foodLogs;
+
+        // 1. Optimistic Update
+        set((state) => ({ foodLogs: state.foodLogs.filter((item) => item.id !== id) }));
+
+        // 2. Database Sync
+        const { error } = await supabase.from('food_logs').delete().eq('id', id);
+        if (error) {
+          console.error('Error deleting food log in Supabase:', error);
+          set({ foodLogs: previousFoodLogs });
+        }
+      },
+
+      updateFoodLog: async (id, updatedLog) => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+        const userId = session.user.id;
+
+        const previousFoodLogs = get().foodLogs;
+        const beforeObj = previousFoodLogs.find(item => item.id === id);
+
+        // 1. Optimistic Update
+        set((state) => ({
+          foodLogs: state.foodLogs.map((item) => item.id === id ? { ...item, ...updatedLog } : item)
+        }));
+
+        // 2. Database Sync
+        const updatedLogObj = { ...beforeObj, ...updatedLog } as FoodLog;
+        const dbLog = mapFoodLogToDb(updatedLogObj, userId);
+        const { error } = await supabase.from('food_logs').update(dbLog).eq('id', id);
+
+        if (error) {
+          console.error('Error updating food log in Supabase:', error);
+          set({ foodLogs: previousFoodLogs });
+        }
+      },
+
+      updateFoodChecklist: async (childId, checklist) => {
+        const previousChecklist = get().foodChecklist;
+        const currentChecklist = previousChecklist[childId] || {
+          acceptsPieces: false,
+          usesPincer: false,
+          takesToMouth: false,
+          chewsWell: false,
+        };
+
+        const updatedChecklistObj = { ...currentChecklist, ...checklist };
+
+        // 1. Optimistic Update
+        set((state) => ({
+          foodChecklist: {
+            ...state.foodChecklist,
+            [childId]: updatedChecklistObj
+          }
+        }));
+
+        // 2. Database Sync (Stored as JSONB in children table)
+        const { error } = await supabase
+          .from('children')
+          .update({ food_checklist: updatedChecklistObj })
+          .eq('id', childId);
+
+        if (error) {
+          console.error('Error updating child food checklist in Supabase:', error);
+          set({ foodChecklist: previousChecklist });
+        }
+      },
+
+      updateReminder: async (id, r) => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+        const userId = session.user.id;
+
+        const previousReminders = get().reminders;
+        const beforeObj = previousReminders.find(item => item.id === id);
+
+        // 1. Optimistic Update
+        set((state) => ({
+          reminders: state.reminders.map((item) => item.id === id ? { ...item, ...r } : item)
+        }));
+
+        // 2. Database Sync
+        const updatedR = { ...beforeObj, ...r } as Reminder;
+        const dbR = mapReminderToDb(updatedR, userId);
+        const { error } = await supabase.from('reminders').update(dbR).eq('id', id);
+
+        if (error) {
+          console.error('Error updating reminder in Supabase:', error);
+          set({ reminders: previousReminders });
+        }
+      },
+
+      deleteReminder: async (id) => {
+        const previousReminders = get().reminders;
+
+        // 1. Optimistic Update
+        set((state) => ({ reminders: state.reminders.filter((item) => item.id !== id) }));
+
+        // 2. Database Sync
+        const { error } = await supabase.from('reminders').delete().eq('id', id);
+        if (error) {
+          console.error('Error deleting reminder in Supabase:', error);
+          set({ reminders: previousReminders });
+        }
+      },
+
       markNotificationAsRead: (id) => set((state) => ({
         notifications: state.notifications.map((n) => n.id === id ? { ...n, isRead: true } : n)
       })),
+      
       toggleNotifications: (open) => set((state) => ({
         ui: { ...state.ui, notifications: { isOpen: open } }
       })),
-      addVaccinesBatch: (newVaccines) => set((state) => ({
-        vaccines: [...state.vaccines, ...newVaccines]
-      })),
+
+      addVaccinesBatch: async (newVaccines) => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+        const userId = session.user.id;
+
+        const finalVaccines = newVaccines.map(v => ({
+          ...v,
+          id: v.id || crypto.randomUUID()
+        }));
+
+        // 1. Optimistic Update
+        set((state) => ({ vaccines: [...state.vaccines, ...finalVaccines] }));
+
+        // 2. Database Sync
+        const dbVaccines = finalVaccines.map(v => mapVaccineToDb(v, userId));
+        const { error } = await supabase.from('vaccines').insert(dbVaccines);
+        
+        if (error) {
+          console.error('Error bulk saving vaccines to Supabase:', error);
+          // Rollback
+          const idsToRemove = new Set(finalVaccines.map(v => v.id));
+          set((state) => ({ vaccines: state.vaccines.filter(v => !idsToRemove.has(v.id)) }));
+        }
+      },
+
       addAiMessage: (childId, message) => set((state) => ({
         aiChatHistory: {
           ...state.aiChatHistory,
           [childId]: [...(state.aiChatHistory[childId] || []), message]
         }
       })),
-      toggleMilestone: (childId, milestoneItemId) => set((state) => {
-        const existing = state.childMilestones.find(cm => cm.childId === childId && cm.milestoneItemId === milestoneItemId);
+
+      toggleMilestone: async (childId, milestoneItemId) => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+        const userId = session.user.id;
+
+        const previousMilestones = get().childMilestones;
+        const existing = previousMilestones.find(cm => cm.childId === childId && cm.milestoneItemId === milestoneItemId);
+
         if (existing) {
-          return {
+          const updatedCompleted = !existing.completed;
+          
+          // 1. Optimistic Update
+          set((state) => ({
             childMilestones: state.childMilestones.map(cm => 
-              cm.id === existing.id ? { ...cm, completed: !cm.completed } : cm
+              cm.id === existing.id ? { ...cm, completed: updatedCompleted, completionDate: updatedCompleted ? new Date().toISOString().split('T')[0] : undefined } : cm
             )
-          };
+          }));
+
+          // 2. Database Sync
+          const { error } = await supabase
+            .from('child_milestones')
+            .update({ completed: updatedCompleted, completion_date: updatedCompleted ? new Date().toISOString().split('T')[0] : null })
+            .eq('id', existing.id);
+
+          if (error) {
+            console.error('Error updating child milestone in Supabase:', error);
+            set({ childMilestones: previousMilestones });
+          }
         } else {
-          return {
-            childMilestones: [
-              ...state.childMilestones,
-              { id: crypto.randomUUID(), childId, milestoneItemId, completed: true }
-            ]
+          const id = crypto.randomUUID();
+          const newMilestone: ChildMilestone = {
+            id,
+            childId,
+            milestoneItemId,
+            completed: true,
+            completionDate: new Date().toISOString().split('T')[0]
           };
+
+          // 1. Optimistic Update
+          set((state) => ({ childMilestones: [...state.childMilestones, newMilestone] }));
+
+          // 2. Database Sync
+          const dbMilestone = mapMilestoneToDb(newMilestone, userId);
+          const { error } = await supabase.from('child_milestones').insert({ ...dbMilestone, id });
+          
+          if (error) {
+            console.error('Error saving child milestone to Supabase:', error);
+            set((state) => ({ childMilestones: state.childMilestones.filter(cm => cm.id !== id) }));
+          }
         }
-      }),
+      },
+
       setSelectedPeriod: (period) => set((state) => ({
         ui: { ...state.ui, milestones: { ...state.ui.milestones, selectedPeriod: period } }
       })),
+
       reset: () => set({
         children: [],
         activeChildId: null,
@@ -437,7 +1060,7 @@ export const useAppStore = create<AppState>()(
       }),
     }),
     {
-      name: 'rotinaped-storage-v12', // Bump version 
+      name: 'rotinaped-storage-supabase-v1',
       storage: createJSONStorage(() => storageWrapper),
     }
   )

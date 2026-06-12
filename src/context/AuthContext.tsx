@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { useAppStore } from '@/store/useAppStore';
 
 export type UserRole = 'admin' | 'client';
 
@@ -28,12 +29,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     if (currentUser) {
       // Sincronização segura e síncrona do papel do usuário diretamente do JWT
-      const userRole = (currentUser.app_metadata?.role || 
-                        currentUser.user_metadata?.role || 
+      const userRole = (currentUser.app_metadata?.role ||
+                        currentUser.user_metadata?.role ||
                         'client') as UserRole;
       setRole(userRole);
+      
+      // Carregar todos os dados do Supabase de forma assíncrona em background
+      useAppStore.getState().loadAllData();
     } else {
       setRole(null);
+      // Limpar os estados do Zustand ao deslogar
+      useAppStore.getState().reset();
     }
     setLoading(false);
   };
