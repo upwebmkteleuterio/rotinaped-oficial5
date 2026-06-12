@@ -140,12 +140,14 @@ export default function Profiles() {
             className="px-6 py-8 space-y-8"
           >
             <div className="flex items-center gap-4">
-              <button
-                onClick={() => navigate(-1)}
-                className="w-10 h-10 bg-white border border-slate-100 rounded-full flex items-center justify-center text-slate-400 active:scale-95 transition-transform"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </button>
+              {children.length > 0 && (
+                <button
+                  onClick={() => navigate(-1)}
+                  className="w-10 h-10 bg-white border border-slate-100 rounded-full flex items-center justify-center text-slate-400 active:scale-95 transition-transform"
+                >
+                  <ArrowLeft className="w-5 h-5" />
+                </button>
+              )}
               <div>
                 <h2 className="text-3xl font-bold text-slate-800 tracking-tight">
                   Perfis
@@ -238,13 +240,44 @@ export default function Profiles() {
             </div>
 
             {children.length === 0 && (
-              <div className="text-center py-20 space-y-4">
-                <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto text-slate-300">
-                  <Baby className="w-10 h-10" />
+              <div className="space-y-6 animate-fade-in text-left">
+                {/* Onboarding Welcome Card */}
+                <div className="bg-gradient-to-br from-blue-50/60 to-indigo-50/60 border border-blue-100/50 p-6 rounded-[2rem] space-y-4 shadow-xs">
+                  <div className="flex items-center gap-2.5 text-brand-blue">
+                    <Sparkles className="w-5 h-5 animate-pulse text-amber-500 fill-amber-500" />
+                    <span className="text-xs font-black uppercase tracking-wider">Bem-vindo(a) ao RotinaPed!</span>
+                  </div>
+                  <h3 className="text-lg font-black text-slate-800 tracking-tight">Vamos começar a configurar?</h3>
+                  <p className="text-xs text-slate-600 leading-relaxed font-medium">
+                    Para começarmos, precisamos primeiro que você configure o seu primeiro perfil. O RotinaPed foi projetado para acompanhar os cuidados de saúde de toda a família:
+                  </p>
+                  
+                  <div className="grid grid-cols-2 gap-2 text-[10px] font-bold text-slate-700 pt-1">
+                    <div className="flex items-center gap-1.5 bg-white p-2.5 rounded-xl border border-slate-100 shadow-3xs">
+                      👶 Bebês e Crianças
+                    </div>
+                    <div className="flex items-center gap-1.5 bg-white p-2.5 rounded-xl border border-slate-100 shadow-3xs">
+                      🤰 Gestantes (DPP)
+                    </div>
+                    <div className="flex items-center gap-1.5 bg-white p-2.5 rounded-xl border border-slate-100 shadow-3xs">
+                      👩 Adultos
+                    </div>
+                    <div className="flex items-center gap-1.5 bg-white p-2.5 rounded-xl border border-slate-100 shadow-3xs">
+                      👵 Idosos
+                    </div>
+                  </div>
+                  
+                  <p className="text-[10px] text-slate-400 font-semibold leading-normal pt-2 border-t border-slate-100/60">
+                    💡 Toque no botão de adicionar (<span className="text-brand-blue font-bold">+</span>) no canto superior direito para cadastrar o seu primeiro perfil e liberar o aplicativo.
+                  </p>
                 </div>
-                <div>
-                  <p className="font-bold text-slate-800">Crie seu primeiro perfil</p>
-                  <p className="text-xs text-slate-400 mt-1">Toque no botão + para começar</p>
+
+                {/* Simulated illustration for visual delight */}
+                <div className="py-8 text-center space-y-4 opacity-50 grayscale">
+                  <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto text-slate-300">
+                    <User className="w-8 h-8" />
+                  </div>
+                  <p className="text-slate-400 text-xs font-bold uppercase tracking-wider">Aguardando seu primeiro cadastro...</p>
                 </div>
               </div>
             )}

@@ -22,14 +22,18 @@ import TestRunner from './pages/TestRunner';
 import Navbar from './components/layout/Navbar';
 import Login from './pages/Login';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { useAppStore } from './store/useAppStore';
 import { Baby } from 'lucide-react';
 
 function AppContent() {
   const { user, loading } = useAuth();
+  const { children, hasLoadedData } = useAppStore();
   const location = useLocation();
 
+  const isStoreLoading = user && !hasLoadedData;
+
   // 1. Loading Screen (Ultra fast, matching design brand)
-  if (loading) {
+  if (loading || isStoreLoading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50">
         <div className="flex flex-col items-center space-y-4">
@@ -47,6 +51,14 @@ function AppContent() {
   // 2. Auth Protection Gate
   if (!user) {
     return <Login />;
+  }
+
+  // 2b. Onboarding Gate: If no profiles are registered, force the user to create their first profile on the /profiles screen
+  const hasNoProfiles = children.length === 0;
+  const isAllowedPath = location.pathname === '/profiles' || location.pathname === '/dev-test-runner';
+  
+  if (hasNoProfiles && !isAllowedPath) {
+    return <Navigate to="/profiles" replace />;
   }
 
   const hideNavbar = location.pathname.startsWith('/community/chat/') || 

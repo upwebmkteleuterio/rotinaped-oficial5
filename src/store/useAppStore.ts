@@ -260,6 +260,7 @@ interface AppState {
   notifications: AppNotification[];
   dailyTips: DailyTip[];
   aiChatHistory: Record<string, { id: string; text: string; sender: 'user' | 'ai'; timestamp: string; }[]>;
+  hasLoadedData: boolean;
   
   // Modals / UI State per screen
   ui: {
@@ -361,6 +362,7 @@ export const useAppStore = create<AppState>()(
       foodLogs: [],
       foodChecklist: {},
       aiChatHistory: {},
+      hasLoadedData: false,
       notifications: [
         { id: 'n4', title: 'Dica do Dia', message: 'A introdução alimentar deve ser feita com paciência. Confira novas receitas!', date: '2026-04-24', isRead: false, type: 'tip' },
       ],
@@ -445,10 +447,12 @@ export const useAppStore = create<AppState>()(
             foodLogs: mappedFoodLogs,
             exams: mappedExams,
             foodChecklist: foodChecklistRecord,
-            activeChildId: get().activeChildId || (mappedChildren.length > 0 ? mappedChildren[0].id : null)
+            activeChildId: get().activeChildId || (mappedChildren.length > 0 ? mappedChildren[0].id : null),
+            hasLoadedData: true
           });
         } catch (error) {
           console.error('[loadAllData] Error restoring user state from Supabase:', error);
+          set({ hasLoadedData: true }); // even on error, we mark loading as done to unlock the app
         }
       },
 
@@ -1057,6 +1061,7 @@ export const useAppStore = create<AppState>()(
         foodChecklist: {},
         aiChatHistory: {},
         notifications: [],
+        hasLoadedData: false,
       }),
     }),
     {
