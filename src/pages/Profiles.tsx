@@ -10,14 +10,12 @@ import {
   Plus,
   ChevronRight,
   Heart,
-  Briefcase,
   Phone,
   Trash2,
   Stethoscope,
   Info,
   CheckCircle2,
-  Sparkles,
-  X
+  Sparkles
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "../lib/utils";
@@ -163,8 +161,6 @@ export default function Profiles() {
               </button>
             </div>
 
-
-
             <div className="space-y-4">
               {children.map((child) => (
                 <Card
@@ -266,9 +262,16 @@ export default function Profiles() {
                       👵 Idosos
                     </div>
                   </div>
+
+                  <button
+                    onClick={handleAdd}
+                    className="w-full bg-brand-blue text-white py-4 rounded-2xl text-xs font-black uppercase tracking-wider shadow-md hover:bg-[#134e75] active:scale-98 transition-all flex items-center justify-center gap-2 mt-2 cursor-pointer"
+                  >
+                    <Plus className="w-4 h-4" /> Criar Meu Primeiro Perfil
+                  </button>
                   
-                  <p className="text-[10px] text-slate-400 font-semibold leading-normal pt-2 border-t border-slate-100/60">
-                    💡 Toque no botão de adicionar (<span className="text-brand-blue font-bold">+</span>) no canto superior direito para cadastrar o seu primeiro perfil e liberar o aplicativo.
+                  <p className="text-[10px] text-slate-400 font-semibold leading-normal pt-2 border-t border-slate-100/60 text-center">
+                    💡 Ou use o botão de adicionar (<span className="text-brand-blue font-bold">+</span>) no canto superior direito.
                   </p>
                 </div>
 
@@ -800,8 +803,6 @@ export default function Profiles() {
           </motion.main>
         )}
       </AnimatePresence>
-
-
     </div>
   );
 }
