@@ -21,18 +21,35 @@ import AISupport from './pages/AISupport';
 import TestRunner from './pages/TestRunner';
 import Navbar from './components/layout/Navbar';
 import Login from './pages/Login';
+import SplashScreen from './components/common/SplashScreen';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { useAppStore } from './store/useAppStore';
 import { Baby } from 'lucide-react';
+import { useState, useEffect } from 'react';
 
 function AppContent() {
   const { user, loading } = useAuth();
   const { children, hasLoadedData } = useAppStore();
   const location = useLocation();
 
+  // Control Splash Screen active state
+  const [showSplash, setShowSplash] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowSplash(false);
+    }, 3000); // Exibe por exatos 3 segundos
+    return () => clearTimeout(timer);
+  }, []);
+
   const isStoreLoading = user && !hasLoadedData;
 
-  // 1. Loading Screen (Ultra fast, matching design brand)
+  // 1. Splash Screen
+  if (showSplash) {
+    return <SplashScreen />;
+  }
+
+  // 2. Loading Screen (Se o banco de dados Supabase ainda estiver baixando informações em background)
   if (loading || isStoreLoading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50">
@@ -41,19 +58,19 @@ function AppContent() {
             <Baby className="w-8 h-8 text-white" />
           </div>
           <div className="text-slate-500 text-sm font-medium animate-pulse">
-            Carregando RotinaPed...
+            Sincronizando RotinaPed...
           </div>
         </div>
       </div>
     );
   }
 
-  // 2. Auth Protection Gate
+  // 3. Auth Protection Gate
   if (!user) {
     return <Login />;
   }
 
-  // 2b. Onboarding Gate: If no profiles are registered, force the user to create their first profile on the /profiles screen
+  // 4. Onboarding Gate: Se não houver nenhum filho registrado, força o registro do primeiro filho
   const hasNoProfiles = children.length === 0;
   const isAllowedPath = location.pathname === '/profiles' || location.pathname.includes('dev-test-runner');
   
@@ -65,7 +82,7 @@ function AppContent() {
                      location.pathname.startsWith('/ai-support') || 
                      location.pathname === '/dev-test-runner';
 
-  // 3. Secured Routes
+  // 5. Secured Routes
   return (
     <div className={cn("mobile-container shadow-2xl", hideNavbar && "!pb-0 h-[100dvh] max-h-[100dvh] min-h-0 overflow-hidden overscroll-none")}>
       <Routes>
