@@ -389,6 +389,23 @@ export default function TestRunner() {
 
   return (
     <div className="bg-slate-900 min-h-screen text-slate-100 p-6 flex flex-col font-sans pb-12">
+      <style dangerouslySetInnerHTML={{__html: `
+        /* Ultimate Safety Reset to force desktop viewport even on cached layout wrappers */
+        html, body, #root, #root > div, .mobile-container {
+          max-width: none !important;
+          width: 100% !important;
+          min-width: 100% !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          height: auto !important;
+          min-height: 100vh !important;
+          max-height: none !important;
+          overflow: auto !important;
+          overflow-y: auto !important;
+          display: block !important;
+          background-color: #0f172a !important; /* bg-slate-900 */
+        }
+      `}} />
       {/* Header */}
       <header className="bg-slate-950 p-6 rounded-3xl border border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xl shrink-0">
         <div className="flex items-center gap-4">
