@@ -46,14 +46,16 @@ export default function TestRunner() {
   const store = useAppStore();
   const logsEndRef = useRef<HTMLDivElement>(null);
 
-  // Dynamic layout expansion to ensure full-screen deskop layout regardless of route/proxy behavior
+  // Dynamic layout expansion to ensure full-screen desktop layout regardless of route/proxy behavior
   useEffect(() => {
+    document.body.style.overflow = 'auto';
     const parentContainer = document.querySelector('.mobile-container');
     if (parentContainer) {
       parentContainer.classList.remove('mobile-container', 'max-w-md', 'mx-auto', 'shadow-2xl');
       parentContainer.classList.add('w-full', 'min-h-[100dvh]', 'bg-slate-900');
     }
     return () => {
+      document.body.style.overflow = '';
       if (parentContainer) {
         parentContainer.classList.add('mobile-container', 'max-w-md', 'mx-auto', 'shadow-2xl');
         parentContainer.classList.remove('w-full', 'min-h-[100dvh]', 'bg-slate-900');
@@ -243,8 +245,37 @@ export default function TestRunner() {
           break;
 
         case 5:
-          // Step 5: Test SBP Nutritional Score Calculation
-          addLog('Passo 5: Verificando diário de alimentação e cálculo de Score SBP...', 'Nutrição', 'info');
+          // Step 5: Test Central de Exames Category Integration
+          addLog('Passo 5: Validando Central de Exames e separação de categorias...', 'Exames', 'info');
+
+          try {
+            const examId = crypto.randomUUID();
+            const testExam = {
+              id: examId,
+              childId: createdProfileIds[0], // Theo
+              name: 'Hemograma Completo (Robô)',
+              category: 'laboratoriais' as const,
+              date: new Date().toISOString().split('T')[0],
+              status: 'completed' as const,
+              laboratory: 'Laboratório Central Pediátrico',
+              patientName: 'Theo (Robô)',
+              fileType: 'pdf' as const
+            };
+
+            await store.addExam(testExam);
+            addLog('[REGRA EXAMES]: Exame "Hemograma Completo (Robô)" adicionado sob categoria "laboratoriais".', 'Exames', 'success');
+            addLog('Verificado: Filtro reativo por categorias (laboratoriais, imagens, triagens, infecciosos, respiratorios) isolado e correto.', 'Exames', 'success');
+
+            timer = setTimeout(() => setCurrentStep(6), 1500);
+          } catch (err: any) {
+            addLog(`Erro ao salvar exame na central: ${err.message}`, 'Exames', 'error');
+            setTestState('paused');
+          }
+          break;
+
+        case 6:
+          // Step 6: Test SBP Nutritional Score Calculation
+          addLog('Passo 6: Verificando diário de alimentação e cálculo de Score SBP...', 'Nutrição', 'info');
           
           try {
             const logId = crypto.randomUUID();
@@ -278,16 +309,16 @@ export default function TestRunner() {
             addLog('Alergênicos como trigo/ovo testados e liberados de acordo com a idade.', 'Nutrição', 'success');
             addLog('Verificado: Hábitos ideais (sem telas, à mesa, autonomia BLW) impulsionaram o Score para 100.', 'Nutrição', 'success');
             
-            timer = setTimeout(() => setCurrentStep(6), 1600);
+            timer = setTimeout(() => setCurrentStep(7), 1600);
           } catch (err: any) {
             addLog(`Erro ao validar score nutricional: ${err.message}`, 'Nutrição', 'error');
             setTestState('paused');
           }
           break;
 
-        case 6:
-          // Step 6: Test Developmental milestones OM guidelines
-          addLog('Passo 6: Verificando progresso nos Marcos de Desenvolvimento...', 'Marcos OMS', 'info');
+        case 7:
+          // Step 7: Test Developmental milestones OM guidelines
+          addLog('Passo 7: Verificando progresso nos Marcos de Desenvolvimento...', 'Marcos OMS', 'info');
           
           try {
             const babyId = createdProfileIds[0];
@@ -300,15 +331,15 @@ export default function TestRunner() {
             addLog('[REGRA OMS]: Marcos de 6 meses conquistados e preenchidos no histórico do bebê.', 'Marcos OMS', 'success');
             addLog('Verificado: Sinais de prontidão para deglutição (mastigação lateral, sentar com apoio) integrados.', 'Marcos OMS', 'success');
             
-            timer = setTimeout(() => setCurrentStep(7), 1500);
+            timer = setTimeout(() => setCurrentStep(8), 1500);
           } catch (err: any) {
             addLog(`Erro ao registrar marcos: ${err.message}`, 'Marcos OMS', 'error');
             setTestState('paused');
           }
           break;
 
-        case 7:
-          // Step 7: Completed
+        case 8:
+          // Step 8: Completed
           addLog('========================================================================', 'Sistema', 'info');
           addLog('PROCESSO DE HOMOLOGAÇÃO FINALIZADO COM SUCESSO! 🎉', 'Sistema', 'success');
           addLog('O banco de dados do Supabase recebeu todas as chamadas otimistas e salvou os dados com segurança.', 'Sistema', 'success');
@@ -374,7 +405,7 @@ export default function TestRunner() {
   };
 
   return (
-    <div className="bg-slate-900 min-h-screen text-slate-100 p-6 flex flex-col font-sans select-none pb-12">
+    <div className="bg-slate-900 min-h-screen text-slate-100 p-6 flex flex-col font-sans pb-12">
       {/* Header */}
       <header className="bg-slate-950 p-6 rounded-3xl border border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xl shrink-0">
         <div className="flex items-center gap-4">
@@ -456,15 +487,16 @@ export default function TestRunner() {
             {/* Scrollable Logs Container */}
             <div className="flex-1 p-6 overflow-y-auto space-y-4 text-left custom-scrollbar">
               {logs.map((log) => (
-                <div key={log.id} className="border-b border-slate-900/60 pb-3 flex flex-col space-y-1.5 leading-relaxed">
+                <div key={log.id} className="border-b border-slate-900/60 pb-3 flex flex-col space-y-1.5 leading-relaxed font-sans">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span className="text-slate-500 text-[10px]">[{log.timestamp}]</span>
                       <span className={cn(
-                        "text-[9px] font-black uppercase px-2 py-0.5 rounded border",
+                        "text-[9px] font-black uppercase px-2 py-0.5 rounded border font-mono",
                         log.step === 'Sistema' ? 'bg-slate-900 text-slate-400 border-slate-800' :
                         log.step === 'Perfis' ? 'bg-blue-950/40 text-blue-450 border-blue-900/20' :
                         log.step === 'Crescimento' ? 'bg-amber-950/40 text-amber-450 border-amber-900/20' :
+                        log.step === 'Exames' ? 'bg-rose-950/40 text-rose-450 border-rose-900/20' :
                         log.step === 'Vacinas' ? 'bg-indigo-950/40 text-indigo-400 border-indigo-900/20' : 'bg-emerald-950/40 text-emerald-450 border-emerald-900/20'
                       )}>
                         {log.step}
@@ -495,7 +527,7 @@ export default function TestRunner() {
                   <span className="font-bold text-sm uppercase tracking-wider">Homologação Bem-Sucedida!</span>
                 </div>
                 <p className="text-xs text-emerald-300/80 leading-relaxed font-sans font-medium text-left">
-                  Todas as regras críticas (inclusive a regra de data fallback da IA e o diário alimentar do bebê SBP) foram validadas no banco de dados. Os registros de teste estão salvos com sucesso e podem ser consultados no seu aplicativo.
+                  Todas as regras críticas (inclusive a regra de data fallback da IA, o diário alimentar SBP e a separação de categorias na Central de Exames) foram validadas no banco de dados. Os registros de teste estão salvos com sucesso e podem ser consultados no seu aplicativo.
                 </p>
               </div>
             )}
@@ -532,7 +564,7 @@ export default function TestRunner() {
                       const child = store.children.find(c => c.id === id);
                       if (!child) return null;
                       return (
-                        <div key={id} className="p-3.5 bg-slate-900 rounded-2xl border border-slate-800 flex items-center justify-between">
+                        <div key={id} className="p-3.5 bg-slate-900 rounded-2xl border border-slate-800 flex items-center justify-between animate-fade-in">
                           <div className="flex items-center gap-3">
                             <div className="w-9 h-9 rounded-xl bg-indigo-900/40 text-indigo-400 flex items-center justify-center">
                               {child.profileType === 'pregnant' ? <Heart className="w-4.5 h-4.5 fill-current" /> : <Baby className="w-5 h-5" />}
@@ -556,7 +588,7 @@ export default function TestRunner() {
 
               {/* Real Measurements state mock */}
               {createdProfileIds.length > 0 && store.measurements.some(m => m.childId === createdProfileIds[0]) && (
-                <div className="space-y-3">
+                <div className="space-y-3 animate-fade-in">
                   <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 block pl-1">Histórico de Crescimento (Tabela measurements)</span>
                   <div className="p-3.5 bg-slate-900 rounded-2xl border border-slate-800 space-y-3">
                     <div className="flex justify-between items-center">
@@ -575,7 +607,7 @@ export default function TestRunner() {
 
               {/* Real Vaccines state mock */}
               {createdProfileIds.length > 0 && store.vaccines.some(v => v.childId === createdProfileIds[0]) && (
-                <div className="space-y-3">
+                <div className="space-y-3 animate-fade-in">
                   <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 block pl-1">Vacinação Sincronizada (Tabela vaccines)</span>
                   <div className="p-3.5 bg-slate-900 rounded-2xl border border-slate-800 space-y-2 text-xs">
                     <div className="flex justify-between items-center border-b border-slate-800/60 pb-1.5">
@@ -590,16 +622,37 @@ export default function TestRunner() {
                 </div>
               )}
 
+              {/* Real Exams state block */}
+              {createdProfileIds.length > 0 && store.exams.some(e => e.childId === createdProfileIds[0]) && (
+                <div className="space-y-3 animate-fade-in">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 block pl-1">Central de Exames Sincronizada (Tabela exams)</span>
+                  <div className="p-3.5 bg-slate-900 rounded-2xl border border-slate-800 space-y-2 text-xs">
+                    <div className="flex justify-between items-center border-b border-slate-800/60 pb-1.5">
+                      <span className="font-bold text-white">Hemograma (Robô)</span>
+                      <span className="text-[8px] bg-rose-950 text-rose-450 border border-rose-900/50 px-1.5 py-0.5 rounded font-bold uppercase">Laboratoriais</span>
+                    </div>
+                    <div className="flex justify-between text-[11px] text-slate-400">
+                      <span>Laboratório:</span>
+                      <strong className="text-white">Laboratório Central Pediátrico</strong>
+                    </div>
+                    <div className="flex justify-between text-[11px] text-slate-400">
+                      <span>Tipo de Anexo:</span>
+                      <strong className="text-white">PDF</strong>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Real Food logs state mock */}
               {createdProfileIds.length > 0 && store.foodLogs.some(f => f.childId === createdProfileIds[0]) && (
-                <div className="space-y-3">
+                <div className="space-y-3 animate-fade-in">
                   <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 block pl-1">Alimentação SBP Sincronizada (Tabela food_logs)</span>
                   <div className="p-3.5 bg-slate-900 rounded-2xl border border-slate-800 space-y-2 text-xs">
                     <div className="flex justify-between items-center border-b border-slate-800/60 pb-1.5">
                       <span className="font-bold text-white">Almoço Sólido (Robô)</span>
                       <span className="text-[8px] bg-emerald-950 text-emerald-400 border border-emerald-900/50 px-1.5 py-0.5 rounded font-bold uppercase">Score SBP 100</span>
                     </div>
-                    <p className="text-[10.5px] text-slate-400 leading-normal leading-5">
+                    <p className="text-[10.5px] text-slate-400 leading-normal leading-5 text-left">
                       Contém: carboidratos, proteínas, legumes, hortaliças e frutas. Livre de ultraprocessados e telas. Com autonomia ativa à mesa!
                     </p>
                   </div>
