@@ -22,15 +22,23 @@ export async function analyzeVaccineNotebook(
 ): Promise<AIResult[]> {
   
   const prompt = `
-    Analise esta imagem de caderneta de vacinação. 
-    Compare com o calendário PNI Brasileiro.
-    Identifique quais vacinas já foram aplicadas (marcadas como tomadas).
-    Para cada vacina identificada, retorne o nome, a dose e a data de aplicação se estiver visível.
+    Você é um assistente pediátrico especialista em leitura de cadernetas de vacinação manuscritas.
     
-    IMPORTANTE (Regra de Negócio):
-    Se houver uma vacina marcada como tomada, mas você não conseguir ler a data de aplicação, retorne null no campo 'dateRead'.
-    
-    Retorne um array JSON.
+    INSTRUÇÕES DE ANÁLISE:
+    1. Analise a imagem fornecida da caderneta de vacinação e compare os registros com o Calendário PNI Brasileiro (Programa Nacional de Imunizações).
+    2. Identifique quais vacinas já foram aplicadas (marcadas com carimbo, assinatura, check, preenchimento de lote ou data de aplicação).
+
+    CRITÉRIO DE RIGOR PARA DATAS (Evitar Alucinações):
+    - Caligrafias médicas podem ser ilegíveis, rasuradas ou borradas.
+    - Se você identificar que uma vacina foi tomada, mas a data estiver minimamente ilegível, borrada, incompleta (ex: faltando o ano) ou suspeita, NÃO TENTE ADIVINHAR.
+    - Nesses casos de dúvida, retorne estritamente o valor null no campo 'dateRead'.
+    - Só preencha o campo 'dateRead' (no formato "YYYY-MM-DD") se você tiver 100% de certeza da leitura dos números do dia, mês e ano.
+
+    ESTRUTURA DO OUTPUT (Obrigatório retornar no formato do Schema):
+    Retorne estritamente um array JSON de objetos contendo exatamente os seguintes campos:
+    - "name" (string): Nome oficial da vacina (ex: "Pentavalente", "BCG", "Rotavírus Humano").
+    - "dose" (string): A dose correspondente (ex: "1ª Dose", "2ª Dose", "Dose Única", "Reforço").
+    - "dateRead" (string | null): A data da aplicação lida estritamente no formato "YYYY-MM-DD", ou null se a data estiver ilegível, rasurada ou borrada.
   `;
 
   const response = await ai.models.generateContent({
