@@ -4,16 +4,16 @@ import { useAppStore } from '../store/useAppStore';
 import { cn } from '../lib/utils';
 import {
   Play,
-  CheckCircle2, 
-  AlertTriangle, 
-  Activity, 
-  Database, 
-  Sparkles, 
-  RefreshCw, 
-  ChevronLeft, 
-  Trash2, 
-  Plus, 
-  FileCheck2, 
+  CheckCircle2,
+  AlertTriangle,
+  Activity,
+  Database,
+  Sparkles,
+  RefreshCw,
+  ChevronLeft,
+  Trash2,
+  Plus,
+  FileCheck2,
   Bot,
   ShieldCheck,
   FlaskConical,
@@ -27,7 +27,8 @@ import {
   Coffee,
   Check,
   Pause,
-  Copy
+  Copy,
+  Baby
 } from 'lucide-react';
 import { Card } from '../components/common/UI';
 import { motion, AnimatePresence } from 'motion/react';
