@@ -55,7 +55,7 @@ function AppContent() {
 
   // 2b. Onboarding Gate: If no profiles are registered, force the user to create their first profile on the /profiles screen
   const hasNoProfiles = children.length === 0;
-  const isAllowedPath = location.pathname === '/profiles' || location.pathname === '/dev-test-runner';
+  const isAllowedPath = location.pathname === '/profiles' || location.pathname.includes('dev-test-runner');
   
   if (hasNoProfiles && !isAllowedPath) {
     return <Navigate to="/profiles" replace />;
