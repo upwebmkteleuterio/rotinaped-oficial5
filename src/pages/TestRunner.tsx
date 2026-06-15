@@ -45,6 +45,21 @@ export default function TestRunner() {
   const store = useAppStore();
   const logsEndRef = useRef<HTMLDivElement>(null);
 
+  // Dynamic layout expansion to ensure full-screen deskop layout regardless of route/proxy behavior
+  useEffect(() => {
+    const parentContainer = document.querySelector('.mobile-container');
+    if (parentContainer) {
+      parentContainer.classList.remove('mobile-container', 'max-w-md', 'mx-auto', 'shadow-2xl');
+      parentContainer.classList.add('w-full', 'min-h-[100dvh]', 'bg-slate-900');
+    }
+    return () => {
+      if (parentContainer) {
+        parentContainer.classList.add('mobile-container', 'max-w-md', 'mx-auto', 'shadow-2xl');
+        parentContainer.classList.remove('w-full', 'min-h-[100dvh]', 'bg-slate-900');
+      }
+    };
+  }, []);
+
   const [testState, setTestState] = useState<'idle' | 'running' | 'paused' | 'completed'>('idle');
   const [currentStep, setCurrentStep] = useState(0);
   const [createdProfileIds, setCreatedProfileIds] = useState<string[]>([]);
