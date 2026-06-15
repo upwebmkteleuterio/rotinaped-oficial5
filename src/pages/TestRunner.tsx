@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../store/useAppStore';
-import { 
-  Play, 
+import { cn } from '../lib/utils';
+import {
+  Play,
   CheckCircle2, 
   AlertTriangle, 
   Activity, 
