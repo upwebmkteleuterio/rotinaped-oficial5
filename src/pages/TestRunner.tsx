@@ -406,6 +406,18 @@ export default function TestRunner() {
 
   return (
     <div className="bg-slate-900 min-h-screen text-slate-100 p-6 flex flex-col font-sans pb-12">
+      <style dangerouslySetInnerHTML={{__html: `
+        body, html, #root, .mobile-container {
+          overflow: auto !important;
+          height: auto !important;
+          max-height: none !important;
+          min-height: 100vh !important;
+          width: 100% !important;
+          max-width: none !important;
+          margin: 0 !important;
+          padding: 0 !important;
+        }
+      `}} />
       {/* Header */}
       <header className="bg-slate-950 p-6 rounded-3xl border border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xl shrink-0">
         <div className="flex items-center gap-4">
