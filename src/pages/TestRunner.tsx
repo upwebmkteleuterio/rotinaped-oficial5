@@ -46,23 +46,6 @@ export default function TestRunner() {
   const store = useAppStore();
   const logsEndRef = useRef<HTMLDivElement>(null);
 
-  // Dynamic layout expansion to ensure full-screen desktop layout regardless of route/proxy behavior
-  useEffect(() => {
-    document.body.style.overflow = 'auto';
-    const parentContainer = document.querySelector('.mobile-container');
-    if (parentContainer) {
-      parentContainer.classList.remove('mobile-container', 'max-w-md', 'mx-auto', 'shadow-2xl');
-      parentContainer.classList.add('w-full', 'min-h-[100dvh]', 'bg-slate-900');
-    }
-    return () => {
-      document.body.style.overflow = '';
-      if (parentContainer) {
-        parentContainer.classList.add('mobile-container', 'max-w-md', 'mx-auto', 'shadow-2xl');
-        parentContainer.classList.remove('w-full', 'min-h-[100dvh]', 'bg-slate-900');
-      }
-    };
-  }, []);
-
   const [testState, setTestState] = useState<'idle' | 'running' | 'paused' | 'completed'>('idle');
   const [currentStep, setCurrentStep] = useState(0);
   const [createdProfileIds, setCreatedProfileIds] = useState<string[]>([]);
@@ -406,18 +389,6 @@ export default function TestRunner() {
 
   return (
     <div className="bg-slate-900 min-h-screen text-slate-100 p-6 flex flex-col font-sans pb-12">
-      <style dangerouslySetInnerHTML={{__html: `
-        body, html, #root, .mobile-container {
-          overflow: auto !important;
-          height: auto !important;
-          max-height: none !important;
-          min-height: 100vh !important;
-          width: 100% !important;
-          max-width: none !important;
-          margin: 0 !important;
-          padding: 0 !important;
-        }
-      `}} />
       {/* Header */}
       <header className="bg-slate-950 p-6 rounded-3xl border border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xl shrink-0">
         <div className="flex items-center gap-4">
