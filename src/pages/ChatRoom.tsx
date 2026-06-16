@@ -138,7 +138,7 @@ export default function ChatRoom() {
         ) : messages.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center p-8 space-y-4">
             <div className="w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center text-[#1b6392]">
-              <Sparkles className="w-8 h-8" />
+              <Send className="w-7 h-7 transform rotate-[-30deg]" />
             </div>
             <div className="space-y-1">
               <h4 className="font-bold text-slate-700">Inicie a conversa!</h4>
