@@ -34,6 +34,47 @@ export default function Profiles() {
   const [view, setView] = useState<"list" | "form">("list");
   const [editingChild, setEditingChild] = useState<Partial<Child> | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [dateInputValue, setDateInputValue] = useState("");
+
+  const formatDbToMask = (dbDate: string): string => {
+    if (!dbDate) return "";
+    const parts = dbDate.split("-");
+    if (parts.length === 3) {
+      return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+    return dbDate;
+  };
+
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value.replace(/\D/g, "");
+    
+    let formatted = "";
+    if (raw.length > 0) {
+      formatted = raw.substring(0, 2);
+      if (raw.length > 2) {
+        formatted += "/" + raw.substring(2, 4);
+      }
+      if (raw.length > 4) {
+        formatted += "/" + raw.substring(4, 8);
+      }
+    }
+
+    setDateInputValue(formatted);
+
+    if (formatted.length === 10) {
+      const parts = formatted.split("/");
+      if (parts.length === 3) {
+        const day = parts[0];
+        const month = parts[1];
+        const year = parts[2];
+        const dbDateStr = `${year}-${month}-${day}`;
+        setEditingChild(prev => prev ? { ...prev, birthDate: dbDateStr } : null);
+      }
+    } else {
+      setEditingChild(prev => prev ? { ...prev, birthDate: "" } : null);
+    }
+  };
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const navigate = useNavigate();
@@ -70,6 +111,7 @@ export default function Profiles() {
       feedingType: "breastfeeding",
       profileType: "child",
     });
+    setDateInputValue("");
     setView("form");
   };
 
@@ -78,6 +120,7 @@ export default function Profiles() {
       ...child,
       profileType: child.profileType || "child"
     });
+    setDateInputValue(formatDbToMask(child.birthDate));
     setView("form");
   };
 
@@ -425,15 +468,13 @@ export default function Profiles() {
                       Previsão do Parto (DPP) *
                     </label>
                     <input
-                      type="date"
-                      className="w-full bg-white border border-slate-100 rounded-2xl p-5 text-sm font-semibold text-slate-700 shadow-sm focus:ring-4 focus:ring-brand-blue/5 focus:border-brand-blue transition-all outline-none"
-                      value={editingChild?.birthDate || ""}
-                      onChange={(e) =>
-                        setEditingChild({
-                          ...editingChild!,
-                          birthDate: e.target.value,
-                        })
-                      }
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={10}
+                      placeholder="DD/MM/AAAA"
+                      className="w-full bg-white border border-slate-100 rounded-2xl p-5 text-sm font-semibold text-slate-700 shadow-sm focus:ring-4 focus:ring-brand-blue/5 focus:border-brand-blue transition-all outline-none placeholder:text-slate-300"
+                      value={dateInputValue}
+                      onChange={handleDateChange}
                     />
                   </div>
                 ) : (
@@ -443,15 +484,13 @@ export default function Profiles() {
                         Nascimento *
                       </label>
                       <input
-                        type="date"
-                        className="w-full bg-white border border-slate-100 rounded-2xl p-5 text-sm font-semibold text-slate-700 shadow-sm focus:ring-4 focus:ring-brand-blue/5 focus:border-brand-blue transition-all outline-none"
-                        value={editingChild?.birthDate || ""}
-                        onChange={(e) =>
-                          setEditingChild({
-                            ...editingChild!,
-                            birthDate: e.target.value,
-                          })
-                        }
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={10}
+                        placeholder="DD/MM/AAAA"
+                        className="w-full bg-white border border-slate-100 rounded-2xl p-5 text-sm font-semibold text-slate-700 shadow-sm focus:ring-4 focus:ring-brand-blue/5 focus:border-brand-blue transition-all outline-none placeholder:text-slate-300"
+                        value={dateInputValue}
+                        onChange={handleDateChange}
                       />
                     </div>
                     <div className="space-y-2">
