@@ -20,7 +20,6 @@ export function useCommunityChat(channelId: string) {
   const [typingUsers, setTypingUsers] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   
-  // Ref to hold current user details to avoid multiple DB fetches and keep track updated
   const userProfileRef = useRef<{ name: string; avatarUrl: string }>({
     name: 'Mãe',
     avatarUrl: ''
@@ -36,7 +35,6 @@ export function useCommunityChat(channelId: string) {
       if (!user) return;
       
       try {
-        // Try to get from public.profiles
         const { data, error } = await supabase
           .from('profiles')
           .select('full_name')
@@ -49,7 +47,6 @@ export function useCommunityChat(channelId: string) {
             avatarUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(data.full_name)}&background=1b6392&color=fff`
           };
         } else {
-          // Fallback to metadata
           const name = user.user_metadata?.full_name || 'Mãe';
           userProfileRef.current = {
             name,
@@ -68,10 +65,11 @@ export function useCommunityChat(channelId: string) {
   useEffect(() => {
     if (!user || !channelId) return;
 
-    setIsLoading(true);
+    let isMounted = true;
 
-    // Fetch message history (automatically limited/cleaned up on the server via trigger)
-    const fetchHistory = async () => {
+    // Helper to fetch message history
+    const fetchHistory = async (showLoadingIndicator = true) => {
+      if (showLoadingIndicator) setIsLoading(true);
       try {
         const { data, error } = await supabase
           .from('community_messages')
@@ -81,108 +79,135 @@ export function useCommunityChat(channelId: string) {
 
         if (error) throw error;
 
-        const mapped = (data || []).map((msg: any) => ({
-          id: msg.id,
-          channel_id: msg.channel_id,
-          user_id: msg.user_id,
-          sender_name: msg.sender_name,
-          sender_avatar: msg.sender_avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(msg.sender_name)}&background=random`,
-          text: msg.text,
-          created_at: msg.created_at,
-          isMe: msg.user_id === user.id
-        }));
-
-        setMessages(mapped);
+        if (isMounted) {
+          const mapped = (data || []).map((msg: any) => ({
+            id: msg.id,
+            channel_id: msg.channel_id,
+            user_id: msg.user_id,
+            sender_name: msg.sender_name,
+            sender_avatar: msg.sender_avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(msg.sender_name)}&background=random`,
+            text: msg.text,
+            created_at: msg.created_at,
+            isMe: msg.user_id === user.id
+          }));
+          setMessages(mapped);
+        }
       } catch (err) {
         console.error('[useCommunityChat] Error fetching chat history:', err);
       } finally {
-        setIsLoading(false);
+        if (isMounted && showLoadingIndicator) setIsLoading(false);
       }
     };
 
-    fetchHistory();
-
-    // Setup Supabase Realtime for Messages and Presence
-    const roomName = `community_chat_${channelId}`;
-    const channel = supabase.channel(roomName, {
-      config: {
-        presence: {
-          key: user.id
-        }
+    // Helper to setup and subscribe to Supabase Realtime + Presence channel
+    const setupRealtimeSubscription = () => {
+      // Clean up previous channel if exists
+      if (channelRef.current) {
+        channelRef.current.unsubscribe();
+        channelRef.current = null;
       }
-    });
 
-    channelRef.current = channel;
-
-    // Listen to DB insertions
-    channel.on(
-      'postgres_changes',
-      {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'community_messages',
-        filter: `channel_id=eq.${channelId}`
-      },
-      (payload) => {
-        const newMsg = payload.new as any;
-        // Skip appending if it's already in state to avoid race conditions/duplicates
-        setMessages((prev) => {
-          if (prev.some(m => m.id === newMsg.id)) return prev;
-          return [
-            ...prev,
-            {
-              id: newMsg.id,
-              channel_id: newMsg.channel_id,
-              user_id: newMsg.user_id,
-              sender_name: newMsg.sender_name,
-              sender_avatar: newMsg.sender_avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(newMsg.sender_name)}&background=random`,
-              text: newMsg.text,
-              created_at: newMsg.created_at,
-              isMe: newMsg.user_id === user.id
-            }
-          ];
-        });
-      }
-    );
-
-    // Track Presence (Online Users and Typing States)
-    channel.on('presence', { event: 'sync' }, () => {
-      const state = channel.presenceState();
-      
-      // Calculate total online users in this channel (number of unique connections)
-      const uniqueUsersCount = Object.keys(state).length;
-      setOnlineCount(uniqueUsersCount || 1);
-
-      // Extract users who are typing (excluding the current user)
-      const typing: string[] = [];
-      Object.entries(state).forEach(([userId, presences]) => {
-        if (userId === user.id) return;
-        
-        const presence = presences[0] as any;
-        if (presence?.isTyping && presence?.userName) {
-          typing.push(presence.userName);
+      const roomName = `community_chat_${channelId}`;
+      const channel = supabase.channel(roomName, {
+        config: {
+          presence: {
+            key: user.id
+          }
         }
       });
-      setTypingUsers(typing);
-    });
 
-    // Subscribe to channel
-    channel.subscribe(async (status) => {
-      if (status === 'SUBSCRIBED') {
-        // Track initial presence (not typing)
-        await channel.track({
-          userName: userProfileRef.current.name,
-          userAvatar: userProfileRef.current.avatarUrl,
-          isTyping: false
+      channelRef.current = channel;
+
+      // Listen to DB insertions
+      channel.on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'community_messages',
+          filter: `channel_id=eq.${channelId}`
+        },
+        (payload) => {
+          const newMsg = payload.new as any;
+          if (!isMounted) return;
+
+          setMessages((prev) => {
+            if (prev.some(m => m.id === newMsg.id)) return prev;
+            return [
+              ...prev,
+              {
+                id: newMsg.id,
+                channel_id: newMsg.channel_id,
+                user_id: newMsg.user_id,
+                sender_name: newMsg.sender_name,
+                sender_avatar: newMsg.sender_avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(newMsg.sender_name)}&background=random`,
+                text: newMsg.text,
+                created_at: newMsg.created_at,
+                isMe: newMsg.user_id === user.id
+              }
+            ];
+          });
+        }
+      );
+
+      // Track Presence (Online Users and Typing States)
+      channel.on('presence', { event: 'sync' }, () => {
+        if (!isMounted) return;
+        const state = channel.presenceState();
+        
+        const uniqueUsersCount = Object.keys(state).length;
+        setOnlineCount(uniqueUsersCount || 1);
+
+        const typing: string[] = [];
+        Object.entries(state).forEach(([userId, presences]) => {
+          if (userId === user.id) return;
+          
+          const presence = presences[0] as any;
+          if (presence?.isTyping && presence?.userName) {
+            typing.push(presence.userName);
+          }
         });
+        setTypingUsers(typing);
+      });
+
+      // Subscribe to channel
+      channel.subscribe(async (status) => {
+        if (status === 'SUBSCRIBED' && isMounted) {
+          await channel.track({
+            userName: userProfileRef.current.name,
+            userAvatar: userProfileRef.current.avatarUrl,
+            isTyping: false
+          });
+        }
+      });
+    };
+
+    // Initial setup
+    fetchHistory(true);
+    setupRealtimeSubscription();
+
+    // 3. LISTEN TO TAB/APP RESUME (Visibility Change)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        console.log('[useCommunityChat] App resumed. Re-syncing messages & reconnecting WebSocket...');
+        // Pull missed history quietly in background (no loader flicker)
+        fetchHistory(false);
+        // Resubscribe to live messaging to wake up stale background connection
+        setupRealtimeSubscription();
       }
-    });
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
-      // Clear timeout and unsubscribe when leaving room
+      isMounted = false;
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-      channel.unsubscribe();
-      channelRef.current = null;
+      if (channelRef.current) {
+        channelRef.current.unsubscribe();
+        channelRef.current = null;
+      }
     };
   }, [channelId, user]);
 
@@ -193,7 +218,6 @@ export function useCommunityChat(channelId: string) {
     const messageText = text.trim();
     const profile = userProfileRef.current;
 
-    // Temporary optimistic message for responsive UX
     const tempId = crypto.randomUUID();
     const tempMsg: ChatMessage = {
       id: tempId,
@@ -220,7 +244,6 @@ export function useCommunityChat(channelId: string) {
       if (error) throw error;
     } catch (err) {
       console.error('[useCommunityChat] Error inserting message:', err);
-      // Remove optimistic message if insert failed
       setMessages(prev => prev.filter(m => m.id !== tempId));
     }
   };
@@ -229,9 +252,7 @@ export function useCommunityChat(channelId: string) {
   const setTyping = (isTyping: boolean) => {
     if (!channelRef.current || !user) return;
 
-    // Only update track state if state actually changes
     if (isTypingRef.current === isTyping) {
-      // If typing is true, reset the idle timer
       if (isTyping) {
         resetTypingTimeout();
       }
@@ -258,7 +279,7 @@ export function useCommunityChat(channelId: string) {
     
     typingTimeoutRef.current = setTimeout(() => {
       setTyping(false);
-    }, 4000); // stop typing animation after 4 seconds of idle time
+    }, 4000);
   };
 
   return {
