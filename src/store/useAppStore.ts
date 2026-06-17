@@ -237,7 +237,7 @@ const mapFoodLogToDb = (ts: Partial<FoodLog>, userId: string) => ({
   meat: ts.meat,
   beans: ts.beans,
   egg: ts.egg,
-  has_vitamin_c: ts.hasVitaminC,
+  has_not_vitamin_c: ts.hasVitaminC,
   ultraprocessed_count: ts.ultraprocessedCount,
   milk_volume: ts.milkVolume,
   autonomy: ts.autonomy,
@@ -246,6 +246,9 @@ const mapFoodLogToDb = (ts: Partial<FoodLog>, userId: string) => ({
 });
 
 interface AppState {
+  simulatedUserId: string | null;
+  simulatedUserEmail: string | null;
+  setSimulatedUser: (id: string | null, email: string | null) => Promise<void>;
   children: Child[];
   activeChildId: string | null;
   measurements: Measurement[];
@@ -330,6 +333,8 @@ const storageWrapper = {
 export const useAppStore = create<AppState>()(
   persist(
     (set, get) => ({
+      simulatedUserId: null,
+      simulatedUserEmail: null,
       children: [],
       activeChildId: null,
       measurements: [],
@@ -391,11 +396,37 @@ export const useAppStore = create<AppState>()(
         },
       },
 
-      // HYDRATE ALL USER DATA FROM SUPABASE
+      setSimulatedUser: async (id, email) => {
+        set({ simulatedUserId: id, simulatedUserEmail: email, activeChildId: null });
+        await get().loadAllData();
+      },
+
       loadAllData: async () => {
         try {
           const { data: { session } } = await supabase.auth.getSession();
           if (!session) return;
+
+          const targetUserId = get().simulatedUserId;
+
+          let childrenQuery = supabase.from('children').select('*').order('created_at', { ascending: true });
+          let measurementsQuery = supabase.from('measurements').select('*').order('date', { ascending: true });
+          let vaccinesQuery = supabase.from('vaccines').select('*').order('date', { ascending: true });
+          let milestonesQuery = supabase.from('child_milestones').select('*');
+          let remindersQuery = supabase.from('reminders').select('*').order('created_at', { ascending: false });
+          let milkLogsQuery = supabase.from('milk_logs').select('*').order('date', { ascending: false });
+          let foodLogsQuery = supabase.from('food_logs').select('*').order('date', { ascending: false });
+          let examsQuery = supabase.from('exams').select('*').order('date', { ascending: false });
+
+          if (targetUserId) {
+            childrenQuery = childrenQuery.eq('user_id', targetUserId);
+            measurementsQuery = measurementsQuery.eq('user_id', targetUserId);
+            vaccinesQuery = vaccinesQuery.eq('user_id', targetUserId);
+            milestonesQuery = milestonesQuery.eq('user_id', targetUserId);
+            remindersQuery = remindersQuery.eq('user_id', targetUserId);
+            milkLogsQuery = milkLogsQuery.eq('user_id', targetUserId);
+            foodLogsQuery = foodLogsQuery.eq('user_id', targetUserId);
+            examsQuery = examsQuery.eq('user_id', targetUserId);
+          }
 
           // Parallel query execution
           const [
@@ -408,14 +439,14 @@ export const useAppStore = create<AppState>()(
             foodLogsRes,
             examsRes
           ] = await Promise.all([
-            supabase.from('children').select('*').order('created_at', { ascending: true }),
-            supabase.from('measurements').select('*').order('date', { ascending: true }),
-            supabase.from('vaccines').select('*').order('date', { ascending: true }),
-            supabase.from('child_milestones').select('*'),
-            supabase.from('reminders').select('*').order('created_at', { ascending: false }),
-            supabase.from('milk_logs').select('*').order('date', { ascending: false }),
-            supabase.from('food_logs').select('*').order('date', { ascending: false }),
-            supabase.from('exams').select('*').order('date', { ascending: false })
+            childrenQuery,
+            measurementsQuery,
+            vaccinesQuery,
+            milestonesQuery,
+            remindersQuery,
+            milkLogsQuery,
+            foodLogsQuery,
+            examsQuery
           ]);
 
           if (childrenRes.error) throw childrenRes.error;
@@ -459,7 +490,7 @@ export const useAppStore = create<AppState>()(
       addChild: async (child) => {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) return;
-        const userId = session.user.id;
+        const userId = get().simulatedUserId || session.user.id;
         const childId = child.id || crypto.randomUUID();
         const finalChild = { ...child, id: childId };
 
@@ -503,7 +534,7 @@ export const useAppStore = create<AppState>()(
       updateChild: async (id, c) => {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) return;
-        const userId = session.user.id;
+        const userId = get().simulatedUserId || session.user.id;
 
         const previousChildren = get().children;
         const childBefore = previousChildren.find(child => child.id === id);
@@ -588,7 +619,7 @@ export const useAppStore = create<AppState>()(
       addMeasurement: async (m) => {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) return;
-        const userId = session.user.id;
+        const userId = get().simulatedUserId || session.user.id;
         const measurementId = m.id || crypto.randomUUID();
         const finalMeasurement = { ...m, id: measurementId };
 
@@ -608,7 +639,7 @@ export const useAppStore = create<AppState>()(
       updateMeasurement: async (id, m) => {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) return;
-        const userId = session.user.id;
+        const userId = get().simulatedUserId || session.user.id;
 
         const previousMeasurements = get().measurements;
         const beforeObj = previousMeasurements.find(item => item.id === id);
@@ -652,7 +683,7 @@ export const useAppStore = create<AppState>()(
       addVaccine: async (v) => {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) return;
-        const userId = session.user.id;
+        const userId = get().simulatedUserId || session.user.id;
         const vaccineId = v.id || crypto.randomUUID();
         const finalVaccine = { ...v, id: vaccineId };
 
@@ -672,7 +703,7 @@ export const useAppStore = create<AppState>()(
       updateVaccine: async (id, v) => {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) return;
-        const userId = session.user.id;
+        const userId = get().simulatedUserId || session.user.id;
 
         const previousVaccines = get().vaccines;
         const beforeObj = previousVaccines.find(item => item.id === id);
@@ -712,7 +743,7 @@ export const useAppStore = create<AppState>()(
       addExam: async (e) => {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) return;
-        const userId = session.user.id;
+        const userId = get().simulatedUserId || session.user.id;
         const examId = e.id || crypto.randomUUID();
         const finalExam = { ...e, id: examId };
 
@@ -732,7 +763,7 @@ export const useAppStore = create<AppState>()(
       updateExam: async (id, e) => {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) return;
-        const userId = session.user.id;
+        const userId = get().simulatedUserId || session.user.id;
 
         const previousExams = get().exams;
         const beforeObj = previousExams.find(item => item.id === id);
@@ -774,7 +805,7 @@ export const useAppStore = create<AppState>()(
       addReminder: async (reminder) => {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) return;
-        const userId = session.user.id;
+        const userId = get().simulatedUserId || session.user.id;
         const reminderId = reminder.id || crypto.randomUUID();
         const finalReminder = { ...reminder, id: reminderId };
 
@@ -794,7 +825,7 @@ export const useAppStore = create<AppState>()(
       addMilkLog: async (log) => {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) return;
-        const userId = session.user.id;
+        const userId = get().simulatedUserId || session.user.id;
         const logId = log.id || crypto.randomUUID();
         const finalLog = { ...log, id: logId };
 
@@ -828,7 +859,7 @@ export const useAppStore = create<AppState>()(
       addFoodLog: async (log) => {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) return;
-        const userId = session.user.id;
+        const userId = get().simulatedUserId || session.user.id;
         const logId = log.id || crypto.randomUUID();
         const finalLog = { ...log, id: logId };
 
@@ -862,7 +893,7 @@ export const useAppStore = create<AppState>()(
       updateFoodLog: async (id, updatedLog) => {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) return;
-        const userId = session.user.id;
+        const userId = get().simulatedUserId || session.user.id;
 
         const previousFoodLogs = get().foodLogs;
         const beforeObj = previousFoodLogs.find(item => item.id === id);
@@ -917,7 +948,7 @@ export const useAppStore = create<AppState>()(
       updateReminder: async (id, r) => {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) return;
-        const userId = session.user.id;
+        const userId = get().simulatedUserId || session.user.id;
 
         const previousReminders = get().reminders;
         const beforeObj = previousReminders.find(item => item.id === id);
@@ -963,7 +994,7 @@ export const useAppStore = create<AppState>()(
       addVaccinesBatch: async (newVaccines) => {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) return;
-        const userId = session.user.id;
+        const userId = get().simulatedUserId || session.user.id;
 
         const finalVaccines = newVaccines.map(v => ({
           ...v,
@@ -995,7 +1026,7 @@ export const useAppStore = create<AppState>()(
       toggleMilestone: async (childId, milestoneItemId) => {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) return;
-        const userId = session.user.id;
+        const userId = get().simulatedUserId || session.user.id;
 
         const previousMilestones = get().childMilestones;
         const existing = previousMilestones.find(cm => cm.childId === childId && cm.milestoneItemId === milestoneItemId);
@@ -1005,7 +1036,7 @@ export const useAppStore = create<AppState>()(
           
           // 1. Optimistic Update
           set((state) => ({
-            childMilestones: state.childMilestones.map(cm => 
+            childMilestones: state.childMilestones.map(cm =>
               cm.id === existing.id ? { ...cm, completed: updatedCompleted, completionDate: updatedCompleted ? new Date().toISOString().split('T')[0] : undefined } : cm
             )
           }));
@@ -1049,6 +1080,8 @@ export const useAppStore = create<AppState>()(
       })),
 
       reset: () => set({
+        simulatedUserId: null,
+        simulatedUserEmail: null,
         children: [],
         activeChildId: null,
         measurements: [],

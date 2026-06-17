@@ -27,12 +27,13 @@ import { useAppStore } from './store/useAppStore';
 import { AdminRoute } from './components/common/AdminRoute';
 import { AdminLayout } from './components/layout/AdminLayout';
 import AdminUsers from './pages/admin/AdminUsers';
+import AdminPlans from './pages/admin/AdminPlans';
 import { Baby } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
 function AppContent() {
   const { user, loading } = useAuth();
-  const { children, hasLoadedData } = useAppStore();
+  const { children, hasLoadedData, simulatedUserId, simulatedUserEmail, setSimulatedUser } = useAppStore();
   const location = useLocation();
 
   // Control Splash Screen active state
@@ -94,12 +95,7 @@ function AppContent() {
         <AdminLayout>
           <Routes>
             <Route path="/admin/users" element={<AdminUsers />} />
-            <Route path="/admin/plans" element={
-              <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                <h2 className="text-xl font-bold text-slate-800">Gestão de Planos</h2>
-                <p className="text-slate-500 text-sm mt-1">Próxima etapa do nosso desenvolvimento.</p>
-              </div>
-            } />
+            <Route path="/admin/plans" element={<AdminPlans />} />
             <Route path="/admin/*" element={<Navigate to="/admin/users" replace />} />
           </Routes>
         </AdminLayout>
@@ -110,6 +106,17 @@ function AppContent() {
   // 6. Secured Routes (Aplicativo Móvel)
   return (
     <div className={cn("mobile-container shadow-2xl", hideNavbar && "!pb-0 h-[100dvh] max-h-[100dvh] min-h-0 overflow-hidden overscroll-none")}>
+      {simulatedUserId && (
+        <div className="bg-amber-500 text-white text-xs px-4 py-2 font-bold flex justify-between items-center z-50 flex-shrink-0 shadow-sm">
+          <span className="truncate pr-2">Simulando: {simulatedUserEmail}</span>
+          <button
+            onClick={() => setSimulatedUser(null, null)}
+            className="bg-white text-amber-600 px-2 py-0.5 rounded font-bold hover:bg-amber-50 active:scale-95 transition-all flex-shrink-0"
+          >
+            Encerrar
+          </button>
+        </div>
+      )}
       <Routes>
         <Route path="/" element={<Dashboard />} />
         <Route path="/growth" element={<Growth />} />
