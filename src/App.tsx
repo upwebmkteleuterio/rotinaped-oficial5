@@ -24,6 +24,9 @@ import Login from './pages/Login';
 import SplashScreen from './components/common/SplashScreen';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { useAppStore } from './store/useAppStore';
+import { AdminRoute } from './components/common/AdminRoute';
+import { AdminLayout } from './components/layout/AdminLayout';
+import AdminUsers from './pages/admin/AdminUsers';
 import { Baby } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
@@ -78,11 +81,33 @@ function AppContent() {
     return <Navigate to="/profiles" replace />;
   }
 
-  const hideNavbar = location.pathname.startsWith('/community/chat/') || 
-                     location.pathname.startsWith('/ai-support') || 
+  const hideNavbar = location.pathname.startsWith('/community/chat/') ||
+                     location.pathname.startsWith('/ai-support') ||
                      location.pathname === '/dev-test-runner';
 
-  // 5. Secured Routes
+  // 5. Verificação de rotas administrativas (bypassa o mobile-container e entra em tela cheia de PC)
+  const isAdminPath = location.pathname.startsWith('/admin');
+
+  if (isAdminPath) {
+    return (
+      <AdminRoute>
+        <AdminLayout>
+          <Routes>
+            <Route path="/admin/users" element={<AdminUsers />} />
+            <Route path="/admin/plans" element={
+              <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                <h2 className="text-xl font-bold text-slate-800">Gestão de Planos</h2>
+                <p className="text-slate-500 text-sm mt-1">Próxima etapa do nosso desenvolvimento.</p>
+              </div>
+            } />
+            <Route path="/admin/*" element={<Navigate to="/admin/users" replace />} />
+          </Routes>
+        </AdminLayout>
+      </AdminRoute>
+    );
+  }
+
+  // 6. Secured Routes (Aplicativo Móvel)
   return (
     <div className={cn("mobile-container shadow-2xl", hideNavbar && "!pb-0 h-[100dvh] max-h-[100dvh] min-h-0 overflow-hidden overscroll-none")}>
       <Routes>
