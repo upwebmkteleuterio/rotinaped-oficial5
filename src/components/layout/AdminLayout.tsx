@@ -1,17 +1,19 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { 
-  Users, 
-  CreditCard, 
-  ArrowLeft, 
-  Menu, 
-  X, 
-  LogOut 
+import {
+  Users,
+  CreditCard,
+  ArrowLeft,
+  Menu,
+  X,
+  LogOut
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import DataBridgeProbe from '../dev/DataBridgeProbe';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
+  uiCount?: number; // Permite passar o total de registros renderizados na UI
 }
 
 export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
@@ -134,7 +136,9 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
         </header>
 
         {/* Área útil da página */}
-        <div className="p-4 md:p-8 flex-1">
+        <div className="p-4 md:p-8 flex-1 space-y-6">
+          {/* Sonda de Integridade Data-Bridge flutuando no topo de todas as telas de administração */}
+          <DataBridgeProbe uiCount={0} />
           {children}
         </div>
       </main>

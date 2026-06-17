@@ -74,9 +74,7 @@ export default function AdminPlans() {
       console.error('Erro ao buscar planos:', err);
       setError(err.message || 'Erro ao carregar os planos.');
     } finally {
-      if (isRequestActive) {
-        setLoading(false);
-      }
+      setLoading(false); // Correção Sênior: força o loading a fechar sempre ao finalizar
     }
   };
 

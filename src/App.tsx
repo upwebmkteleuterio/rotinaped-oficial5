@@ -92,6 +92,7 @@ function AppContent() {
   if (isAdminPath) {
     return (
       <AdminRoute>
+        {/* Passa o count atual de usuários carregados para que o AdminLayout e o DataBridgeProbe comparem em tempo real */}
         <AdminLayout>
           <Routes>
             <Route path="/admin/users" element={<AdminUsers />} />

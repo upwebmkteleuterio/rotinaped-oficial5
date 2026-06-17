@@ -136,9 +136,7 @@ export default function AdminUsers() {
       console.error('Erro ao buscar usuários:', err);
       setFetchError(err.message || 'Ocorreu um erro de comunicação com o servidor.');
     } finally {
-      if (isRequestActive) {
-        setLoading(false);
-      }
+      setLoading(false); // Correção Sênior: força o loading a fechar sempre ao finalizar
     }
   };
 
@@ -310,6 +308,13 @@ export default function AdminUsers() {
       </td>
     </tr>
   );
+
+  // Passa o total de usuários renderizados para o localStorage para sincronizar a sonda
+  useEffect(() => {
+    localStorage.setItem('rotinaped_ui_users_count', String(users.length));
+    // Dispara evento customizado para que a sonda atualize o count reativamente
+    window.dispatchEvent(new Event('storage'));
+  }, [users]);
 
   return (
     <div className="space-y-6 relative">
