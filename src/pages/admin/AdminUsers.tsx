@@ -15,12 +15,10 @@ import {
   Baby, 
   Eye, 
   User, 
-  Calendar, 
   Mail, 
   Check, 
-  Phone, 
-  Plus, 
-  AlertCircle 
+  AlertCircle, 
+  WifiOff 
 } from 'lucide-react';
 
 const SUPABASE_URL = "https://uorlurdviijaunepstds.supabase.co";
@@ -56,6 +54,10 @@ export default function AdminUsers() {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
+  
+  // Estados de erro e limite de carregamento (Timeout)
+  const [hasTimeout, setHasTimeout] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   // Filtro persistente no localStorage (Todos ou Apenas Pacientes)
   const [activeFilter, setActiveFilter] = useState<'all' | 'patients'>(() => {
@@ -84,9 +86,21 @@ export default function AdminUsers() {
     localStorage.setItem('rotinaped_admin_filter', activeFilter);
   }, [activeFilter]);
 
-  // Busca os usuários no banco de dados aplicando os filtros e paginação
+  // Busca os usuários no banco de dados aplicando os filtros, paginação e controle de Timeout
   const fetchUsers = async () => {
     setLoading(true);
+    setFetchError(null);
+    setHasTimeout(false);
+
+    // Timeout de 8 segundos
+    let isRequestActive = true;
+    const timeoutId = setTimeout(() => {
+      if (isRequestActive) {
+        setHasTimeout(true);
+        setLoading(false);
+      }
+    }, 8000);
+
     try {
       const fromIndex = (page - 1) * ITEMS_PER_PAGE;
       const toIndex = fromIndex + ITEMS_PER_PAGE - 1;
@@ -109,14 +123,22 @@ export default function AdminUsers() {
         .order('full_name', { ascending: true })
         .range(fromIndex, toIndex);
 
+      isRequestActive = false;
+      clearTimeout(timeoutId);
+
       if (error) throw error;
 
       setUsers((data as Profile[]) || []);
       setTotalCount(count || 0);
-    } catch (err) {
+    } catch (err: any) {
+      isRequestActive = false;
+      clearTimeout(timeoutId);
       console.error('Erro ao buscar usuários:', err);
+      setFetchError(err.message || 'Ocorreu um erro de comunicação com o servidor.');
     } finally {
-      setLoading(false);
+      if (isRequestActive) {
+        setLoading(false);
+      }
     }
   };
 
@@ -209,14 +231,15 @@ export default function AdminUsers() {
         }
       });
 
-      // Cadastra o usuário
+      // Cadastra o usuário e passa diretamente o campo is_patient nos metadados!
       const { data, error } = await tempClient.auth.signUp({
         email: newUserEmail,
         password: newUserPassword,
         options: {
           data: {
             full_name: newUserName,
-            role: 'client'
+            role: 'client',
+            is_patient: newUserType === 'paciente'
           }
         }
       });
@@ -224,37 +247,20 @@ export default function AdminUsers() {
       if (error) throw error;
 
       if (data.user) {
-        // Atualiza a flag is_patient e o e-mail na tabela profiles que acabou de ser criada via trigger
-        const isPatientValue = newUserType === 'paciente';
-        
-        // Aguarda 1 segundo para garantir que a trigger handle_new_user() já tenha finalizado
-        await new Promise(resolve => setTimeout(resolve, 1200));
-
-        const { error: updateError } = await supabase
-          .from('profiles')
-          .update({ 
-            is_patient: isPatientValue,
-            email: newUserEmail // Força atualização do e-mail por garantia
-          })
-          .eq('id', data.user.id);
-
-        if (updateError) {
-          console.error('Erro ao salvar campos de paciente no perfil:', updateError);
-        }
-
         setRegisterSuccess(true);
-        fetchUsers(); // Recarrega a tabela de usuários
-
-        // Reseta campos
-        setNewUserName('');
-        setNewUserEmail('');
-        setNewUserPassword('');
-        setNewUserType('comum');
-
+        
+        // Aguarda 1 segundo e recarrega a lista
         setTimeout(() => {
+          fetchUsers(); 
           setIsNewUserModalOpen(false);
           setRegisterSuccess(false);
-        }, 2000);
+          
+          // Reseta campos
+          setNewUserName('');
+          setNewUserEmail('');
+          setNewUserPassword('');
+          setNewUserType('comum');
+        }, 1500);
       }
     } catch (err: any) {
       console.error('Erro de registro de usuário:', err);
@@ -277,7 +283,7 @@ export default function AdminUsers() {
       } finally {
         setLoading(false);
       }
-    };
+    }
   };
 
   const formatDate = (isoString: string | null) => {
@@ -286,6 +292,24 @@ export default function AdminUsers() {
   };
 
   const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE) || 1;
+
+  // Componente Skeleton Row
+  const SkeletonRow = () => (
+    <tr className="animate-pulse">
+      <td className="px-6 py-4"><div className="h-4 bg-slate-200 rounded w-2/3"></div></td>
+      <td className="px-6 py-4"><div className="h-4 bg-slate-200 rounded w-3/4"></div></td>
+      <td className="px-6 py-4"><div className="h-4 bg-slate-200 rounded w-1/3"></div></td>
+      <td className="px-6 py-4 text-center">
+        <div className="h-5 bg-slate-200 rounded-full w-10 mx-auto"></div>
+      </td>
+      <td className="px-6 py-4 text-center">
+        <div className="flex items-center justify-center space-x-2">
+          <div className="w-8 h-8 bg-slate-200 rounded-lg"></div>
+          <div className="w-14 h-6 bg-slate-200 rounded-lg"></div>
+        </div>
+      </td>
+    </tr>
+  );
 
   return (
     <div className="space-y-6 relative">
@@ -348,109 +372,142 @@ export default function AdminUsers() {
         </div>
       </div>
 
-      {/* TABELA DE USUÁRIOS */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-slate-50 border-b border-slate-200">
-                <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500">Nome Completo</th>
-                <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500">E-mail</th>
-                <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500">Cadastro</th>
-                <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500 text-center">É Paciente?</th>
-                <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500 text-center">Ações</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 text-sm">
-              {loading && users.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="text-center py-12 text-slate-400">
-                    <div className="flex flex-col items-center justify-center space-y-2">
-                      <div className="w-8 h-8 border-3 border-[#1b6392] border-t-transparent rounded-full animate-spin"></div>
-                      <span className="text-xs">Carregando dados...</span>
-                    </div>
-                  </td>
+      {/* TRATAMENTO DE TEMPO LIMITE (TIMEOUT) OU ERRO */}
+      {hasTimeout ? (
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-10 text-center flex flex-col items-center justify-center space-y-4">
+          <WifiOff className="w-12 h-12 text-amber-500" />
+          <div>
+            <h3 className="font-bold text-slate-700 text-lg">A conexão demorou muito a responder</h3>
+            <p className="text-slate-500 text-sm max-w-sm mx-auto mt-1">Não foi possível recuperar a lista de usuários neste momento. Por favor, tente atualizar a página.</p>
+          </div>
+          <button
+            onClick={fetchUsers}
+            className="bg-[#1b6392] hover:bg-[#154d72] text-white font-semibold text-sm px-5 py-2.5 rounded-xl flex items-center space-x-2"
+          >
+            <RefreshCw className="w-4 h-4" />
+            <span>Tentar Novamente</span>
+          </button>
+        </div>
+      ) : fetchError ? (
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-10 text-center flex flex-col items-center justify-center space-y-4">
+          <AlertCircle className="w-12 h-12 text-red-500" />
+          <div>
+            <h3 className="font-bold text-slate-700 text-lg">Erro na requisição</h3>
+            <p className="text-slate-500 text-sm max-w-sm mx-auto mt-1">{fetchError}</p>
+          </div>
+          <button
+            onClick={fetchUsers}
+            className="bg-[#1b6392] hover:bg-[#154d72] text-white font-semibold text-sm px-5 py-2.5 rounded-xl flex items-center space-x-2"
+          >
+            <RefreshCw className="w-4 h-4" />
+            <span>Tentar Novamente</span>
+          </button>
+        </div>
+      ) : (
+        /* TABELA DE USUÁRIOS */
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-200">
+                  <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500">Nome Completo</th>
+                  <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500">E-mail</th>
+                  <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500">Cadastro</th>
+                  <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500 text-center">É Paciente?</th>
+                  <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-500 text-center">Ações</th>
                 </tr>
-              ) : users.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="text-center py-12 text-slate-400">
-                    Nenhum usuário cadastrado nesta categoria.
-                  </td>
-                </tr>
-              ) : (
-                users.map((profile) => (
-                  <tr 
-                    key={profile.id} 
-                    onClick={() => setSelectedUser(profile)}
-                    className="hover:bg-slate-50/50 transition-colors cursor-pointer"
-                  >
-                    <td className="px-6 py-4 font-semibold text-slate-800">
-                      {profile.full_name || 'Sem Nome Cadastrado'}
-                    </td>
-                    <td className="px-6 py-4 text-slate-600">
-                      {profile.email || '-'}
-                    </td>
-                    <td className="px-6 py-4 text-slate-500">
-                      {formatDate(profile.updated_at)}
-                    </td>
-                    <td className="px-6 py-4 text-center" onClick={(e) => e.stopPropagation()}>
-                      {/* Chave liga/desliga para status de Paciente */}
-                      <button
-                        onClick={(e) => togglePatientStatus(profile, e)}
-                        className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${profile.is_patient ? 'bg-emerald-500' : 'bg-slate-200'}`}
-                      >
-                        <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${profile.is_patient ? 'translate-x-5' : 'translate-x-0'}`} />
-                      </button>
-                    </td>
-                    <td className="px-6 py-4 text-center" onClick={(e) => e.stopPropagation()}>
-                      <div className="flex items-center justify-center space-x-2">
-                        <button
-                          onClick={() => setSelectedUser(profile)}
-                          className="p-1.5 rounded-lg text-slate-500 hover:text-[#1b6392] hover:bg-slate-100 transition-colors"
-                          title="Ver Detalhes"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleSimulateAccess(profile)}
-                          className="px-2.5 py-1 text-xs font-semibold bg-blue-50 text-[#1b6392] rounded-lg hover:bg-[#1b6392] hover:text-white transition-all active:scale-95"
-                          title="Simular Acesso do Usuário"
-                        >
-                          Simular
-                        </button>
-                      </div>
+              </thead>
+              <tbody className="divide-y divide-slate-100 text-sm">
+                {loading ? (
+                  // Carregamento estilo SKELETON ao invés de roleta de loading
+                  <>
+                    <SkeletonRow />
+                    <SkeletonRow />
+                    <SkeletonRow />
+                    <SkeletonRow />
+                    <SkeletonRow />
+                  </>
+                ) : users.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="text-center py-12 text-slate-400">
+                      Nenhum usuário cadastrado nesta categoria.
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+                ) : (
+                  users.map((profile) => (
+                    <tr 
+                      key={profile.id} 
+                      onClick={() => setSelectedUser(profile)}
+                      className="hover:bg-slate-50/50 transition-colors cursor-pointer"
+                    >
+                      <td className="px-6 py-4 font-semibold text-slate-800">
+                        {profile.full_name || 'Sem Nome Cadastrado'}
+                      </td>
+                      <td className="px-6 py-4 text-slate-600">
+                        {profile.email || '-'}
+                      </td>
+                      <td className="px-6 py-4 text-slate-500">
+                        {formatDate(profile.updated_at)}
+                      </td>
+                      <td className="px-6 py-4 text-center" onClick={(e) => e.stopPropagation()}>
+                        {/* Chave liga/desliga para status de Paciente */}
+                        <button
+                          onClick={(e) => togglePatientStatus(profile, e)}
+                          className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${profile.is_patient ? 'bg-emerald-500' : 'bg-slate-200'}`}
+                        >
+                          <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${profile.is_patient ? 'translate-x-5' : 'translate-x-0'}`} />
+                        </button>
+                      </td>
+                      <td className="px-6 py-4 text-center" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-center space-x-2">
+                          <button
+                            onClick={() => setSelectedUser(profile)}
+                            className="p-1.5 rounded-lg text-slate-500 hover:text-[#1b6392] hover:bg-slate-100 transition-colors"
+                            title="Ver Detalhes"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleSimulateAccess(profile)}
+                            className="px-2.5 py-1 text-xs font-semibold bg-blue-50 text-[#1b6392] rounded-lg hover:bg-[#1b6392] hover:text-white transition-all active:scale-95"
+                            title="Simular Acesso do Usuário"
+                          >
+                            Simular
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
 
-        {/* PAGINAÇÃO */}
-        <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <span className="text-slate-500 text-sm">
-            Página <span className="font-semibold text-slate-800">{page}</span> de <span className="font-semibold text-slate-800">{totalPages}</span>
-          </span>
-          
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={() => setPage(prev => Math.max(prev - 1, 1))}
-              disabled={page === 1 || loading}
-              className="p-2 border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 rounded-xl transition-colors disabled:opacity-50 disabled:hover:bg-white active:scale-95"
-            >
-              <ChevronLeft className="w-5 h-5" />
-            </button>
-            <button
-              onClick={() => setPage(prev => Math.min(prev + 1, totalPages))}
-              disabled={page === totalPages || loading}
-              className="p-2 border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 rounded-xl transition-colors disabled:opacity-50 disabled:hover:bg-white active:scale-95"
-            >
-              <ChevronRight className="w-5 h-5" />
-            </button>
+          {/* PAGINAÇÃO */}
+          <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <span className="text-slate-500 text-sm">
+              Página <span className="font-semibold text-slate-800">{page}</span> de <span className="font-semibold text-slate-800">{totalPages}</span>
+            </span>
+            
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => setPage(prev => Math.max(prev - 1, 1))}
+                disabled={page === 1 || loading}
+                className="p-2 border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 rounded-xl transition-colors disabled:opacity-50 disabled:hover:bg-white active:scale-95"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+              <button
+                onClick={() => setPage(prev => Math.min(prev + 1, totalPages))}
+                disabled={page === totalPages || loading}
+                className="p-2 border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 rounded-xl transition-colors disabled:opacity-50 disabled:hover:bg-white active:scale-95"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* ==================== SLIDE PANEL (DETALHES DO USUÁRIO) ==================== */}
       <div className={`
@@ -514,8 +571,9 @@ export default function AdminUsers() {
                 </h5>
 
                 {loadingChildren ? (
-                  <div className="py-4 text-center text-slate-400 text-xs">
-                    Carregando dependentes...
+                  <div className="py-4 text-center text-slate-400 text-xs flex flex-col items-center justify-center space-y-1.5 animate-pulse">
+                    <div className="h-4 bg-slate-200 rounded w-1/3"></div>
+                    <div className="h-3 bg-slate-200 rounded w-1/4"></div>
                   </div>
                 ) : userChildren.length === 0 ? (
                   <div className="py-6 text-center text-slate-400 text-xs bg-slate-50 rounded-xl border border-dashed border-slate-200">
