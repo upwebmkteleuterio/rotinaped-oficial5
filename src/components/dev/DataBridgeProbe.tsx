@@ -1,20 +1,21 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
-import { 
-  ShieldAlert, 
-  Database, 
-  Activity, 
-  CheckCircle, 
-  AlertTriangle, 
-  Copy, 
-  Terminal, 
-  X, 
-  Maximize2, 
+import {
+  ShieldAlert,
+  Database,
+  Activity,
+  CheckCircle,
+  AlertTriangle,
+  Copy,
+  Terminal,
+  X,
+  Maximize2,
   RefreshCw,
   HelpCircle,
   Clock
 } from 'lucide-react';
+import { AnimatePresence } from 'motion/react';
 
 interface ProbeLog {
   id: string;
