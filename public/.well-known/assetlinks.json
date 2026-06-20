@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "br.com.rotinaped.twa",
+      "sha256_cert_fingerprints": [
+        "F5:2B:10:05:2D:28:21:F1:07:07:4A:C9:1D:0D:01:0A:BF:D5:8A:F2:8C:6D:51:BA:04:C8:DF:28:75:09:0C:21"
+      ]
+    }
+  }
+]
