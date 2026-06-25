@@ -259,51 +259,7 @@ export default function Exams() {
         title={selectedExam?.name || 'Ver Exame'}
       >
         <div className="space-y-6">
-          <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 space-y-4">
-             {selectedExam?.fileType === 'pdf' ? (
-               <div className="aspect-[3/4] bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col items-center justify-center p-8 text-center space-y-4">
-                  <FileText className="w-16 h-16 text-slate-300" />
-                  <div>
-                    <p className="font-bold text-slate-800">Visualização de PDF</p>
-                    <p className="text-xs text-slate-400">O documento está pronto para ser acessado.</p>
-                  </div>
-                  <a
-                    href={selectedExam?.fileUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="bg-brand-blue text-white w-full py-4 rounded-xl font-bold shadow-lg shadow-blue-100 flex items-center justify-center gap-2 hover:bg-[#134e75] transition-colors"
-                  >
-                    <Download className="w-5 h-5" /> Abrir / Baixar Documento
-                  </a>
-               </div>
-             ) : (
-               <div className="relative aspect-[3/4] bg-slate-200 rounded-xl overflow-hidden group flex items-center justify-center">
-                  <motion.img
-                    animate={{ scale: zoom }}
-                    drag={zoom > 1}
-                    dragConstraints={{ top: 0, left: 0, right: 0, bottom: 0 }}
-                    src={selectedExam?.fileUrl} 
-                    alt="Exame" 
-                    className="w-full h-full object-cover"
-                    referrerPolicy="no-referrer"
-                  />
-                   <div className="absolute top-4 right-4 flex flex-col gap-2">
-                      <button 
-                        onClick={() => setZoom(prev => Math.min(prev + 0.5, 3))}
-                        className="bg-black/40 backdrop-blur-md p-3 rounded-full text-white active:scale-90 transition-transform"
-                      >
-                        <ZoomIn className="w-5 h-5" />
-                      </button>
-                      <button 
-                        onClick={() => setZoom(prev => Math.max(prev - 0.5, 1))}
-                        className="bg-black/40 backdrop-blur-md p-3 rounded-full text-white active:scale-90 transition-transform"
-                      >
-                        <ZoomOut className="w-5 h-5" />
-                      </button>
-                   </div>
-               </div>
-             )}
-
+          <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 space-y-6">
              <div className="space-y-3">
                <div className="flex justify-between items-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                  <span>Informações do Exame</span>
@@ -320,6 +276,15 @@ export default function Exams() {
                  </div>
                </div>
              </div>
+
+             <a
+               href={selectedExam?.fileUrl}
+               target="_blank"
+               rel="noopener noreferrer"
+               className="bg-brand-blue text-white w-full py-4 rounded-xl font-bold shadow-lg shadow-blue-100 flex items-center justify-center gap-2 hover:bg-[#134e75] transition-colors"
+             >
+               <Download className="w-5 h-5" /> Abrir / Baixar Documento
+             </a>
           </div>
 
           <button 
