@@ -286,13 +286,6 @@ export default function Exams() {
                <Download className="w-5 h-5" /> Abrir / Baixar Documento
              </a>
           </div>
-
-          <button 
-            onClick={() => setSelectedExam(null)}
-            className="w-full bg-slate-800 text-white font-bold py-4 rounded-2xl active:opacity-90 transition-opacity"
-          >
-            Fechar Visualizador
-          </button>
         </div>
       </Modal>
     </div>
