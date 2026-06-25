@@ -83,7 +83,7 @@ export default function Exams() {
               </div>
               <h3 className="text-lg font-bold text-slate-800 tracking-tight">Dra. Flávia Explica seu Exame</h3>
               <p className="text-xs text-slate-500 leading-normal max-w-[320px]">
-                Envie uma foto ou PDF do exame e receba uma explicação didática dos resultados e termos médicos direto no chat.
+                Receba uma análise inicial com IA e entenda os principais resultados de forma clara e didática. Não substitui avaliação médica.
               </p>
             </div>
             <button 
