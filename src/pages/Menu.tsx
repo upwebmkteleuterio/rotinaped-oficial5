@@ -10,10 +10,8 @@ import {
   MessageCircle, 
   Settings,
   LogOut,
-  HelpCircle,
   Utensils,
-  Users,
-  Sparkles
+  Users
 } from 'lucide-react';
 import CustomAIIcon from '../components/common/CustomAIIcon';
 import { motion } from 'motion/react';
@@ -62,8 +60,15 @@ export default function Menu() {
     {
       label: 'Suporte',
       items: [
-        { id: 'help', label: 'Central de Ajuda', icon: HelpCircle, color: 'text-slate-500', bg: 'bg-slate-50', path: '/support' },
-        { id: 'contact', label: 'Falar com Suporte', icon: MessageCircle, color: 'text-brand-blue', bg: 'bg-blue-50', path: '/support' },
+        { 
+          id: 'contact', 
+          label: 'Falar com Suporte', 
+          icon: MessageCircle, 
+          color: 'text-brand-blue', 
+          bg: 'bg-blue-50', 
+          path: 'https://wa.me/55249888275586?text=Ol%C3%A1%20vim%20atrav%C3%A9s%20do%20app%20e%20gostaria%20e%20preciso%20de%20suporte.', 
+          isExternal: true 
+        },
       ]
     }
   ];
@@ -89,7 +94,13 @@ export default function Menu() {
                   whileTap={{ scale: 0.98 }}
                 >
                   <Card 
-                    onClick={() => item.path !== '#' && navigate(item.path)}
+                    onClick={() => {
+                      if (item.isExternal) {
+                        window.open(item.path, '_blank');
+                      } else if (item.path !== '#') {
+                        navigate(item.path);
+                      }
+                    }}
                     className="bg-white border border-slate-50 p-5 flex items-center justify-between group cursor-pointer"
                   >
                     <div className="flex items-center gap-4">
