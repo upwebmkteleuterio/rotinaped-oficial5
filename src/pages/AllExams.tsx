@@ -132,10 +132,15 @@ export default function AllExams() {
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <button className="p-2 text-slate-300 hover:text-brand-blue hover:bg-blue-50 rounded-lg transition-all">
+                    <a
+                      href={exam.fileUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-2 text-slate-300 hover:text-brand-blue hover:bg-blue-50 rounded-lg transition-all"
+                    >
                       <Download className="w-4 h-4" />
-                    </button>
-                    <button 
+                    </a>
+                    <button
                       onClick={() => deleteExam(exam.id)}
                       className="p-2 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all"
                     >

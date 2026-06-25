@@ -200,10 +200,16 @@ export default function Exams() {
                     </div>
                   ) : (
                     <div className="flex items-center gap-2 ml-2">
-                      <button className="flex items-center gap-1.5 bg-blue-50 text-brand-blue px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider group-active:scale-95 transition-transform">
-                        <Download className="w-3.5 h-3.5" /> PDF
-                      </button>
-                      <button 
+                      <a
+                        href={exam.fileUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="flex items-center gap-1.5 bg-blue-50 text-brand-blue px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider group-active:scale-95 transition-transform hover:bg-blue-100"
+                      >
+                        <Download className="w-3.5 h-3.5" /> {exam.fileType === 'pdf' ? 'PDF' : 'IMG'}
+                      </a>
+                      <button
                         onClick={(e) => { e.stopPropagation(); deleteExam(exam.id); }}
                         className="p-2 text-slate-200 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all"
                       >
@@ -259,11 +265,16 @@ export default function Exams() {
                   <FileText className="w-16 h-16 text-slate-300" />
                   <div>
                     <p className="font-bold text-slate-800">Visualização de PDF</p>
-                    <p className="text-xs text-slate-400">O visualizador de PDF completo requer uma conexão estável.</p>
+                    <p className="text-xs text-slate-400">O documento está pronto para ser acessado.</p>
                   </div>
-                  <button className="bg-brand-blue text-white w-full py-4 rounded-xl font-bold shadow-lg shadow-blue-100 flex items-center justify-center gap-2">
-                    <Download className="w-5 h-5" /> Baixar Documento
-                  </button>
+                  <a
+                    href={selectedExam?.fileUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="bg-brand-blue text-white w-full py-4 rounded-xl font-bold shadow-lg shadow-blue-100 flex items-center justify-center gap-2 hover:bg-[#134e75] transition-colors"
+                  >
+                    <Download className="w-5 h-5" /> Abrir / Baixar Documento
+                  </a>
                </div>
              ) : (
                <div className="relative aspect-[3/4] bg-slate-200 rounded-xl overflow-hidden group flex items-center justify-center">
