@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from './lib/utils';
 import ScrollToTop from './components/common/ScrollToTop';
 import Dashboard from './pages/Dashboard';
@@ -35,6 +35,7 @@ function AppContent() {
   const { user, loading } = useAuth();
   const { children, hasLoadedData, simulatedUserId, simulatedUserEmail, setSimulatedUser } = useAppStore();
   const location = useLocation();
+  const navigate = useNavigate();
 
   // Control Splash Screen active state
   const [showSplash, setShowSplash] = useState(true);
@@ -111,10 +112,13 @@ function AppContent() {
         <div className="bg-amber-500 text-white text-xs px-4 py-2 font-bold flex justify-between items-center z-50 flex-shrink-0 shadow-sm">
           <span className="truncate pr-2">Simulando: {simulatedUserEmail}</span>
           <button
-            onClick={() => setSimulatedUser(null, null)}
-            className="bg-white text-amber-600 px-2 py-0.5 rounded font-bold hover:bg-amber-50 active:scale-95 transition-all flex-shrink-0"
+            onClick={() => {
+              setSimulatedUser(null, null);
+              navigate('/admin/users');
+            }}
+            className="bg-white text-amber-600 px-2 py-1 rounded font-bold hover:bg-amber-50 active:scale-95 transition-all flex-shrink-0"
           >
-            Encerrar
+            Voltar à Administração
           </button>
         </div>
       )}
