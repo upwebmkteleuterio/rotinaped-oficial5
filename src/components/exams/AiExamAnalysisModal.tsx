@@ -1,9 +1,10 @@
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, useRef } from 'react';
 import Modal from '../common/Modal';
 import { useAppStore } from '../../store/useAppStore';
-import { 
-  FileText, 
-  ImageIcon, 
+import { supabase } from '../../integrations/supabase/client';
+import {
+  FileText,
+  ImageIcon,
   Upload,
   Sparkles,
   FlaskConical
@@ -25,18 +26,41 @@ export default function AiExamAnalysisModal({ isOpen, onClose }: AiExamAnalysisM
   
   const [name, setName] = useState('');
   const [laboratory, setLaboratory] = useState('');
-  const [fileType, setFileType] = useState<'pdf' | 'image'>('pdf');
+  const [file, setFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const [uploadedFile, setUploadedFile] = useState<boolean>(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!activeChildId) return;
 
+    if (!file) {
+      alert('Por favor, anexe um arquivo (PDF ou Imagem) do exame para a IA analisar.');
+      return;
+    }
+
     setIsUploading(true);
 
-    // Simulate analysis upload flow
-    setTimeout(() => {
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${crypto.randomUUID()}.${fileExt}`;
+      const filePath = `${activeChildId}/${fileName}`;
+
+      // Upload file to Supabase Storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('exams')
+        .upload(filePath, file);
+
+      if (uploadError) {
+        throw new Error(`Erro ao enviar arquivo: ${uploadError.message}`);
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('exams')
+        .getPublicUrl(filePath);
+
+      const determinedFileType = file.type.includes('pdf') ? 'pdf' : 'image';
+
       const examId = crypto.randomUUID();
       const newExam: Exam = {
         id: examId,
@@ -47,36 +71,38 @@ export default function AiExamAnalysisModal({ isOpen, onClose }: AiExamAnalysisM
         date: new Date().toISOString().split('T')[0],
         status: 'completed',
         patientName: activeChild?.name,
-        fileType,
-        fileUrl: fileType === 'pdf' 
-          ? 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf'
-          : 'https://picsum.photos/seed/exam/800/1200'
+        fileType: determinedFileType,
+        fileUrl: publicUrl
       };
 
       // Add to patient record so it's persisted
-      addExam(newExam);
+      await addExam(newExam);
 
       setIsUploading(false);
       onClose();
       
       // Navigate to the AISupport chat, passing the newly created exam details to analyze
-      navigate('/ai-support', { 
-        state: { 
+      navigate('/ai-support', {
+        state: {
           analyzeExam: {
             name: newExam.name,
             laboratory: newExam.laboratory,
             date: newExam.date,
-            fileType: newExam.fileType
-          } 
-        } 
+            fileType: newExam.fileType,
+            fileUrl: newExam.fileUrl
+          }
+        }
       });
 
       // Reset form
       setName('');
       setLaboratory('');
-      setFileType('pdf');
-      setUploadedFile(false);
-    }, 1500);
+      setFile(null);
+    } catch (error: any) {
+      console.error(error);
+      alert(error.message || 'Ocorreu um erro inesperado ao processar o exame.');
+      setIsUploading(false);
+    }
   };
 
   return (
@@ -118,49 +144,43 @@ export default function AiExamAnalysisModal({ isOpen, onClose }: AiExamAnalysisM
           />
         </div>
 
-        {/* Upload Simulation */}
+        {/* Upload File */}
         <div className="space-y-3">
-          <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Tipo de Arquivo</label>
-          <div className="flex gap-4">
-            <button 
-              type="button"
-              onClick={() => { setFileType('pdf'); setUploadedFile(false); }}
-              className={cn(
-                "flex-1 p-4 rounded-xl border flex items-center justify-center gap-3 transition-all",
-                fileType === 'pdf' ? "border-indigo-500 bg-indigo-50" : "border-slate-100 bg-white"
-              )}
-            >
-              <FileText className={cn("w-5 h-5", fileType === 'pdf' ? "text-indigo-600" : "text-slate-300")} />
-              <span className={cn("text-xs font-bold", fileType === 'pdf' ? "text-indigo-600" : "text-slate-500")}>PDF</span>
-            </button>
-            <button 
-              type="button"
-              onClick={() => { setFileType('image'); setUploadedFile(false); }}
-              className={cn(
-                "flex-1 p-4 rounded-xl border flex items-center justify-center gap-3 transition-all",
-                fileType === 'image' ? "border-indigo-500 bg-indigo-50" : "border-slate-100 bg-white"
-              )}
-            >
-              <ImageIcon className={cn("w-5 h-5", fileType === 'image' ? "text-indigo-600" : "text-slate-300")} />
-              <span className={cn("text-xs font-bold", fileType === 'image' ? "text-indigo-600" : "text-slate-500")}>Foto / Imagem</span>
-            </button>
-          </div>
-          
+          <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Documento (PDF ou Imagem)</label>
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={(e) => setFile(e.target.files?.[0] || null)}
+            accept="image/*,application/pdf"
+            className="hidden"
+          />
           <button
             type="button"
-            onClick={() => setUploadedFile(true)}
+            onClick={() => fileInputRef.current?.click()}
             className={cn(
               "w-full border-2 border-dashed rounded-[2rem] p-8 flex flex-col items-center justify-center gap-3 transition-all outline-none",
-              uploadedFile 
-                ? "border-emerald-200 bg-emerald-50/20" 
+              file
+                ? "border-indigo-500 bg-indigo-50/50"
                 : "border-slate-100 bg-slate-50/50 hover:bg-slate-100/30"
             )}
           >
-            <Upload className={cn("w-8 h-8", uploadedFile ? "text-emerald-500" : "text-slate-300")} />
-            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
-              {uploadedFile ? "Exame anexado com sucesso! 🎉" : "Toque para anexar o exame"}
-            </p>
-            <span className="text-[9px] text-slate-400 font-medium">Suporta PDF, JPG ou PNG de até 10MB</span>
+            {file ? (
+              <>
+                {file.type.includes('pdf') ? <FileText className="w-8 h-8 text-indigo-600" /> : <ImageIcon className="w-8 h-8 text-indigo-600" />}
+                <p className="text-[10px] font-bold text-indigo-900 uppercase tracking-widest text-center truncate w-full px-4">
+                  {file.name}
+                </p>
+                <span className="text-[9px] text-indigo-600/60 font-medium">Toque para trocar o arquivo</span>
+              </>
+            ) : (
+              <>
+                <Upload className="w-8 h-8 text-slate-300" />
+                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
+                  Toque para anexar o exame
+                </p>
+                <span className="text-[9px] text-slate-400 font-medium">Suporta PDF, JPG ou PNG de até 10MB</span>
+              </>
+            )}
           </button>
         </div>
 

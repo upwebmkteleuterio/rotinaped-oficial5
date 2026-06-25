@@ -1,10 +1,11 @@
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, useRef } from 'react';
 import Modal from '../common/Modal';
 import { useAppStore } from '../../store/useAppStore';
-import { 
-  FileText, 
-  FlaskConical, 
-  ImageIcon, 
+import { supabase } from '../../integrations/supabase/client';
+import {
+  FileText,
+  FlaskConical,
+  ImageIcon,
   MoreHorizontal, 
   Droplet, 
   Sun, 
@@ -28,8 +29,9 @@ export default function AddExamModal() {
   const [category, setCategory] = useState<Exam['category']>('laboratoriais');
   const [laboratory, setLaboratory] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
-  const [fileType, setFileType] = useState<'pdf' | 'image'>('pdf');
+  const [file, setFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const categories = [
     { id: 'laboratoriais', label: 'Laboratoriais', icon: FlaskConical, color: 'bg-rose-50 text-rose-500' },
@@ -39,15 +41,37 @@ export default function AddExamModal() {
     { id: 'triagens', label: 'Triagens', icon: ClipboardList, color: 'bg-emerald-50 text-emerald-500' },
   ] as const;
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!activeChildId) return;
 
+    if (!file) {
+      alert('Por favor, anexe um arquivo (PDF ou Imagem) para o exame.');
+      return;
+    }
+
     setIsUploading(true);
 
-    // Simulate upload delay
-    setTimeout(() => {
-      addExam({
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${crypto.randomUUID()}.${fileExt}`;
+      const filePath = `${activeChildId}/${fileName}`;
+
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('exams')
+        .upload(filePath, file);
+
+      if (uploadError) {
+        throw new Error(`Erro ao enviar arquivo: ${uploadError.message}`);
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('exams')
+        .getPublicUrl(filePath);
+
+      const determinedFileType = file.type.includes('pdf') ? 'pdf' : 'image';
+
+      await addExam({
         id: crypto.randomUUID(),
         childId: activeChildId,
         name,
@@ -56,10 +80,8 @@ export default function AddExamModal() {
         date,
         status: 'completed',
         patientName: activeChild?.name,
-        fileType,
-        fileUrl: fileType === 'pdf' 
-          ? 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf'
-          : 'https://picsum.photos/seed/exam/800/1200'
+        fileType: determinedFileType,
+        fileUrl: publicUrl
       });
 
       setIsUploading(false);
@@ -70,7 +92,12 @@ export default function AddExamModal() {
       setCategory('laboratoriais');
       setLaboratory('');
       setDate(new Date().toISOString().split('T')[0]);
-    }, 1500);
+      setFile(null);
+    } catch (error: any) {
+      console.error(error);
+      alert(error.message || 'Ocorreu um erro inesperado ao salvar o exame.');
+      setIsUploading(false);
+    }
   };
 
   return (
@@ -147,38 +174,42 @@ export default function AddExamModal() {
           </div>
         </div>
 
-        {/* Upload Simulation */}
+        {/* Upload File */}
         <div className="space-y-3">
-          <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Documento</label>
-          <div className="flex gap-4">
-            <button 
-              type="button"
-              onClick={() => setFileType('pdf')}
-              className={cn(
-                "flex-1 p-4 rounded-xl border flex items-center gap-3 transition-all",
-                fileType === 'pdf' ? "border-brand-blue bg-blue-50" : "border-slate-50 bg-white"
-              )}
-            >
-              <FileText className={cn("w-5 h-5", fileType === 'pdf' ? "text-brand-blue" : "text-slate-300")} />
-              <span className={cn("text-xs font-bold", fileType === 'pdf' ? "text-brand-blue" : "text-slate-500")}>PDF</span>
-            </button>
-            <button 
-              type="button"
-              onClick={() => setFileType('image')}
-              className={cn(
-                "flex-1 p-4 rounded-xl border flex items-center gap-3 transition-all",
-                fileType === 'image' ? "border-brand-blue bg-blue-50" : "border-slate-50 bg-white"
-              )}
-            >
-              <ImageIcon className={cn("w-5 h-5", fileType === 'image' ? "text-brand-blue" : "text-slate-300")} />
-              <span className={cn("text-xs font-bold", fileType === 'image' ? "text-brand-blue" : "text-slate-500")}>Imagem</span>
-            </button>
-          </div>
-          
-          <div className="border-2 border-dashed border-slate-100 rounded-[2rem] p-8 flex flex-col items-center justify-center gap-3 bg-slate-50/50">
-            <Upload className="w-8 h-8 text-slate-300" />
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Toque para selecionar arquivo</p>
-          </div>
+          <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Documento (PDF ou Imagem)</label>
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={(e) => setFile(e.target.files?.[0] || null)}
+            accept="image/*,application/pdf"
+            className="hidden"
+          />
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className={cn(
+              "w-full border-2 border-dashed rounded-[2rem] p-8 flex flex-col items-center justify-center gap-3 transition-all outline-none",
+              file
+                ? "border-brand-blue bg-blue-50/50"
+                : "border-slate-200 bg-slate-50/50 hover:bg-slate-100/50"
+            )}
+          >
+            {file ? (
+              <>
+                {file.type.includes('pdf') ? <FileText className="w-8 h-8 text-brand-blue" /> : <ImageIcon className="w-8 h-8 text-brand-blue" />}
+                <p className="text-[10px] font-bold text-brand-blue uppercase tracking-widest text-center truncate w-full px-4">
+                  {file.name}
+                </p>
+                <span className="text-[9px] text-brand-blue/60 font-medium">Toque para trocar o arquivo</span>
+              </>
+            ) : (
+              <>
+                <Upload className="w-8 h-8 text-slate-300" />
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Toque para anexar arquivo</p>
+                <span className="text-[9px] text-slate-400 font-medium">Suporta PDF, JPG ou PNG</span>
+              </>
+            )}
+          </button>
         </div>
 
         <button
