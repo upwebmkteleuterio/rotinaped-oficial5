@@ -55,14 +55,15 @@ export default function NotificationModal() {
            {unreadCount > 0 && (
              <button
                onClick={() => markAllNotificationsAsRead()}
-               className="text-[10px] font-bold text-brand-blue uppercase tracking-wider"
+               className="text-[10px] font-bold text-brand-blue uppercase tracking-wider cursor-pointer"
              >
                Marcar todas como lidas
              </button>
            )}
         </div>
 
-        <div className="space-y-4">
+        {/* Container com rolagem interna e altura máxima para respeitar os limites da tela */}
+        <div className="space-y-4 max-h-[50vh] overflow-y-auto pr-1 no-scrollbar pb-4">
           <AnimatePresence initial={false}>
             {notifications.length > 0 ? (
               notifications.map((notification) => (
@@ -97,7 +98,7 @@ export default function NotificationModal() {
                   {!notification.isRead && (
                     <button 
                       onClick={() => markNotificationAsRead(notification.id)}
-                      className="absolute top-4 right-4 text-slate-300 hover:text-brand-blue transition-colors"
+                      className="absolute top-4 right-4 text-slate-300 hover:text-brand-blue transition-colors cursor-pointer"
                     >
                        <X className="w-4 h-4" />
                     </button>
@@ -114,13 +115,6 @@ export default function NotificationModal() {
             )}
           </AnimatePresence>
         </div>
-
-        <button 
-           onClick={() => toggleNotifications(false)}
-           className="w-full py-5 bg-slate-100 text-slate-600 font-bold rounded-2xl uppercase text-[10px] tracking-[0.2em] active:opacity-50 transition-opacity"
-        >
-          Voltar para o App
-        </button>
       </div>
     </Modal>
   );
