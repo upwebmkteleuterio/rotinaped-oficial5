@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import Modal from '../common/Modal';
 import { Bell, Syringe, FileText, Lightbulb, Calendar, Check, Trash2, X } from 'lucide-react';
@@ -15,6 +16,13 @@ export default function NotificationModal() {
 
   const isOpen = ui.notifications.isOpen;
   const unreadCount = notifications.filter(n => !n.isRead).length;
+
+  // Marca todas as notificações como lidas automaticamente ao abrir a central
+  useEffect(() => {
+    if (isOpen && unreadCount > 0) {
+      markAllNotificationsAsRead();
+    }
+  }, [isOpen, unreadCount, markAllNotificationsAsRead]);
 
   const getTypeIcon = (type: string) => {
     switch (type) {
@@ -52,14 +60,6 @@ export default function NotificationModal() {
                 </span>
               )}
            </div>
-           {unreadCount > 0 && (
-             <button
-               onClick={() => markAllNotificationsAsRead()}
-               className="text-[10px] font-bold text-brand-blue uppercase tracking-wider cursor-pointer"
-             >
-               Marcar todas como lidas
-             </button>
-           )}
         </div>
 
         {/* Container com rolagem interna e altura máxima para respeitar os limites da tela */}
@@ -81,12 +81,14 @@ export default function NotificationModal() {
                     <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center shrink-0", getTypeColor(notification.type))}>
                       {getTypeIcon(notification.type)}
                     </div>
-                    <div className="flex-1 min-w-0 pr-6">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h4 className="font-bold text-slate-800 tracking-tight truncate">{notification.title}</h4>
-                        {!notification.isRead && <div className="w-2 h-2 bg-brand-blue rounded-full animate-pulse" />}
+                    <div className="flex-1 min-w-0 pr-6 text-left">
+                      <div className="flex items-start gap-2 mb-1">
+                        <h4 className="font-bold text-slate-800 tracking-tight break-words flex-1">
+                          {notification.title}
+                        </h4>
+                        {!notification.isRead && <div className="w-2 h-2 bg-brand-blue rounded-full animate-pulse mt-1.5 shrink-0" />}
                       </div>
-                      <p className="text-xs text-slate-500 font-medium leading-relaxed">
+                      <p className="text-xs text-slate-500 font-medium leading-relaxed break-words">
                         {notification.message}
                       </p>
                       <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-3 block">
