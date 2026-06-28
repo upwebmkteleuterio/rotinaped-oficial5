@@ -137,8 +137,8 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
 
         {/* Área útil da página */}
         <div className="p-4 md:p-8 flex-1 space-y-6">
-          {/* Sonda de Integridade Data-Bridge flutuando no topo de todas as telas de administração */}
-          <DataBridgeProbe uiCount={0} />
+          {/* Sonda de Integridade Data-Bridge flutuando no topo de todas as telas de administração (Ocultada temporariamente) */}
+          {/* <DataBridgeProbe uiCount={0} /> */}
           {children}
         </div>
       </main>
