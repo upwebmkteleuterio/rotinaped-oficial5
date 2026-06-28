@@ -13,12 +13,13 @@ import {
   UserPlus, 
   X, 
   Baby, 
-  Eye, 
-  User, 
-  Mail, 
-  Check, 
-  AlertCircle, 
-  WifiOff 
+  Eye,
+  User,
+  Mail,
+  Check,
+  AlertCircle,
+  WifiOff,
+  Bell
 } from 'lucide-react';
 
 const SUPABASE_URL = "https://uorlurdviijaunepstds.supabase.co";
@@ -79,12 +80,61 @@ export default function AdminUsers() {
   const [registerError, setRegisterError] = useState<string | null>(null);
   const [registerSuccess, setRegisterSuccess] = useState(false);
 
+  // Estados para o Modal de Enviar Notificação
+  const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
+  const [notificationTargetUser, setNotificationTargetUser] = useState<Profile | null>(null);
+  const [notificationTitle, setNotificationTitle] = useState('');
+  const [notificationMessage, setNotificationMessage] = useState('');
+  const [notificationType, setNotificationType] = useState<'vaccine' | 'exam' | 'reminder' | 'tip'>('tip');
+  const [sendingNotification, setSendingNotification] = useState(false);
+  const [notificationError, setNotificationError] = useState<string | null>(null);
+  const [notificationSuccess, setNotificationSuccess] = useState(false);
+
   const ITEMS_PER_PAGE = 50;
 
   // Atualiza localStorage sempre que mudar o filtro
   useEffect(() => {
     localStorage.setItem('rotinaped_admin_filter', activeFilter);
   }, [activeFilter]);
+
+  const handleSendNotification = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!notificationTargetUser) return;
+    if (!notificationTitle || !notificationMessage) {
+      setNotificationError('Por favor, preencha o título e a mensagem.');
+      return;
+    }
+
+    setSendingNotification(true);
+    setNotificationError(null);
+
+    try {
+      const { error } = await supabase.from('notifications').insert({
+        user_id: notificationTargetUser.id,
+        title: notificationTitle,
+        message: notificationMessage,
+        type: notificationType,
+        is_read: false
+      });
+
+      if (error) throw error;
+
+      setNotificationSuccess(true);
+      setTimeout(() => {
+        setIsNotificationModalOpen(false);
+        setNotificationSuccess(false);
+        setNotificationTitle('');
+        setNotificationMessage('');
+        setNotificationType('tip');
+        setNotificationTargetUser(null);
+      }, 1500);
+    } catch (err: any) {
+      console.error('Erro ao enviar notificação:', err);
+      setNotificationError(err.message || 'Ocorreu um erro ao enviar a notificação.');
+    } finally {
+      setSendingNotification(false);
+    }
+  };
 
   // Busca os usuários no banco de dados aplicando os filtros, paginação e controle de Timeout
   const fetchUsers = async () => {
@@ -466,11 +516,14 @@ export default function AdminUsers() {
                       <td className="px-6 py-4 text-center" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-center space-x-2">
                           <button
-                            onClick={() => setSelectedUser(profile)}
+                            onClick={() => {
+                              setNotificationTargetUser(profile);
+                              setIsNotificationModalOpen(true);
+                            }}
                             className="p-1.5 rounded-lg text-slate-500 hover:text-[#1b6392] hover:bg-slate-100 transition-colors"
-                            title="Ver Detalhes"
+                            title="Enviar Notificação"
                           >
-                            <Eye className="w-4 h-4" />
+                            <Bell className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => handleSimulateAccess(profile)}
@@ -737,6 +790,132 @@ export default function AdminUsers() {
                     >
                       {registering && <RefreshCw className="w-3.5 h-3.5 animate-spin mr-1" />}
                       <span>Cadastrar</span>
+                    </button>
+                  </div>
+                </>
+              )}
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ==================== MODAL DE ENVIAR NOTIFICAÇÃO ==================== */}
+      {isNotificationModalOpen && notificationTargetUser && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="px-6 py-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+              <h3 className="font-bold text-slate-800 text-lg flex items-center space-x-2">
+                <Bell className="w-5 h-5 text-[#1b6392]" />
+                <span>Enviar notificação para esse usuário</span>
+              </h3>
+              <button
+                onClick={() => {
+                  setIsNotificationModalOpen(false);
+                  setNotificationTargetUser(null);
+                }}
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Form */}
+            <form onSubmit={handleSendNotification} className="p-6 space-y-4">
+              {notificationSuccess ? (
+                <div className="flex flex-col items-center justify-center py-6 space-y-3 text-center">
+                  <div className="w-12 h-12 bg-emerald-50 rounded-full flex items-center justify-center text-emerald-500">
+                    <Check className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-slate-800">Notificação Enviada!</h4>
+                    <p className="text-xs text-slate-500 mt-1">O usuário receberá o alerta na central.</p>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {notificationError && (
+                    <div className="p-3 bg-red-50 text-red-600 border border-red-100 rounded-xl text-xs flex items-center space-x-2">
+                      <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                      <span>{notificationError}</span>
+                    </div>
+                  )}
+
+                  {/* Destinatário */}
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-xs text-slate-600">
+                    <span className="font-semibold text-slate-700">Destinatário:</span> {notificationTargetUser.full_name || notificationTargetUser.email}
+                  </div>
+
+                  {/* Título */}
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-slate-600 block">Título *</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Ex: Nova vacina disponível"
+                      value={notificationTitle}
+                      onChange={(e) => setNotificationTitle(e.target.value)}
+                      className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm bg-slate-50/50 focus:outline-none focus:ring-2 focus:ring-[#1b6392]/20 focus:border-[#1b6392]"
+                    />
+                  </div>
+
+                  {/* Mensagem */}
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-slate-600 block">Mensagem *</label>
+                    <textarea
+                      required
+                      rows={4}
+                      placeholder="Digite o conteúdo da notificação..."
+                      value={notificationMessage}
+                      onChange={(e) => setNotificationMessage(e.target.value)}
+                      className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm bg-slate-50/50 focus:outline-none focus:ring-2 focus:ring-[#1b6392]/20 focus:border-[#1b6392] resize-none"
+                    />
+                  </div>
+
+                  {/* Tipo de Notificação */}
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-slate-600 block">Tipo de Notificação *</label>
+                    <div className="grid grid-cols-2 gap-2 pt-1">
+                      {(['tip', 'vaccine', 'exam', 'reminder'] as const).map((type) => {
+                        const labels = {
+                          tip: 'Dica',
+                          vaccine: 'Vacina',
+                          exam: 'Exame',
+                          reminder: 'Lembrete'
+                        };
+                        return (
+                          <button
+                            key={type}
+                            type="button"
+                            onClick={() => setNotificationType(type)}
+                            className={`py-2 px-3 text-xs font-semibold rounded-xl border text-center transition-all ${notificationType === type ? 'bg-[#1b6392]/10 text-[#1b6392] border-[#1b6392]' : 'bg-white text-slate-600 border-slate-200'}`}
+                          >
+                            {labels[type]}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Botões do Modal */}
+                  <div className="flex space-x-2 pt-4">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsNotificationModalOpen(false);
+                        setNotificationTargetUser(null);
+                      }}
+                      className="flex-1 py-2.5 text-xs font-bold text-slate-500 hover:bg-slate-50 border border-slate-200 rounded-xl transition-all"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={sendingNotification}
+                      className="flex-1 py-2.5 text-xs font-bold bg-[#1b6392] hover:bg-[#154d72] text-white rounded-xl transition-all disabled:opacity-50 flex items-center justify-center space-x-1"
+                    >
+                      {sendingNotification && <RefreshCw className="w-3.5 h-3.5 animate-spin mr-1" />}
+                      <span>Enviar</span>
                     </button>
                   </div>
                 </>

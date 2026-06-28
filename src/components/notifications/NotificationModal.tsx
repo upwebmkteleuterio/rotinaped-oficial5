@@ -5,11 +5,12 @@ import { cn, formatDate } from '../../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 
 export default function NotificationModal() {
-  const { 
-    notifications, 
-    markNotificationAsRead, 
-    ui, 
-    toggleNotifications 
+  const {
+    notifications,
+    markNotificationAsRead,
+    markAllNotificationsAsRead,
+    ui,
+    toggleNotifications
   } = useAppStore();
 
   const isOpen = ui.notifications.isOpen;
@@ -52,8 +53,8 @@ export default function NotificationModal() {
               )}
            </div>
            {unreadCount > 0 && (
-             <button 
-               onClick={() => notifications.forEach(n => !n.isRead && markNotificationAsRead(n.id))}
+             <button
+               onClick={() => markAllNotificationsAsRead()}
                className="text-[10px] font-bold text-brand-blue uppercase tracking-wider"
              >
                Marcar todas como lidas

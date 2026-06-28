@@ -245,6 +245,23 @@ const mapFoodLogToDb = (ts: Partial<FoodLog>, userId: string) => ({
   no_screens: ts.noScreens,
 });
 
+const mapDbToNotification = (db: any): AppNotification => ({
+  id: db.id,
+  title: db.title,
+  message: db.message,
+  date: db.created_at,
+  isRead: db.is_read,
+  type: db.type as 'vaccine' | 'exam' | 'reminder' | 'tip',
+});
+
+const mapNotificationToDb = (ts: Partial<AppNotification>, userId: string) => ({
+  user_id: userId,
+  title: ts.title,
+  message: ts.message,
+  type: ts.type || 'tip',
+  is_read: ts.isRead || false,
+});
+
 interface AppState {
   simulatedUserId: string | null;
   simulatedUserEmail: string | null;
@@ -316,7 +333,9 @@ interface AppState {
   setEditingMeasurement: (id: string | null) => void;
   toggleMilestone: (childId: string, milestoneItemId: string) => Promise<void>;
   setSelectedPeriod: (period: number) => void;
-  markNotificationAsRead: (id: string) => void;
+  markNotificationAsRead: (id: string) => Promise<void>;
+  markAllNotificationsAsRead: () => Promise<void>;
+  addNotification: (notification: Partial<AppNotification>, userId: string) => Promise<void>;
   toggleNotifications: (open: boolean) => void;
   addVaccinesBatch: (vaccines: Vaccine[]) => Promise<void>;
   addAiMessage: (childId: string, message: { id: string; text: string; sender: 'user' | 'ai'; timestamp: string; }) => void;
@@ -368,9 +387,7 @@ export const useAppStore = create<AppState>()(
       foodChecklist: {},
       aiChatHistory: {},
       hasLoadedData: false,
-      notifications: [
-        { id: 'n4', title: 'Dica do Dia', message: 'A introdução alimentar deve ser feita com paciência. Confira novas receitas!', date: '2026-04-24', isRead: false, type: 'tip' },
-      ],
+      notifications: [],
       dailyTips: [
         { id: 't1', title: 'Introdução Alimentar: Por onde começar?', description: 'Aos 6 meses, o bebê apresenta sinais de prontidão. Comece com frutas e legumes amassados.', imageUrl: 'https://sacadademae.com.br/wp-content/uploads/2018/06/shutterstock_430230868.jpg', category: 'Alimentação' },
         { id: 't2', title: 'Higiene do Sono', description: 'Um ambiente escuro e silencioso ajuda na liberação de melatonina para o bebê.', imageUrl: 'https://images.unsplash.com/photo-1520206159849-c9bc683e2101?auto=format&fit=crop&q=80&w=800', category: 'Sono' },
@@ -416,6 +433,7 @@ export const useAppStore = create<AppState>()(
           let milkLogsQuery = supabase.from('milk_logs').select('*').order('date', { ascending: false });
           let foodLogsQuery = supabase.from('food_logs').select('*').order('date', { ascending: false });
           let examsQuery = supabase.from('exams').select('*').order('date', { ascending: false });
+          let notificationsQuery = supabase.from('notifications').select('*').order('created_at', { ascending: false }).limit(10);
 
           if (targetUserId) {
             childrenQuery = childrenQuery.eq('user_id', targetUserId);
@@ -426,6 +444,7 @@ export const useAppStore = create<AppState>()(
             milkLogsQuery = milkLogsQuery.eq('user_id', targetUserId);
             foodLogsQuery = foodLogsQuery.eq('user_id', targetUserId);
             examsQuery = examsQuery.eq('user_id', targetUserId);
+            notificationsQuery = notificationsQuery.eq('user_id', targetUserId);
           }
 
           // Parallel query execution
@@ -437,7 +456,8 @@ export const useAppStore = create<AppState>()(
             remindersRes,
             milkLogsRes,
             foodLogsRes,
-            examsRes
+            examsRes,
+            notificationsRes
           ] = await Promise.all([
             childrenQuery,
             measurementsQuery,
@@ -446,7 +466,8 @@ export const useAppStore = create<AppState>()(
             remindersQuery,
             milkLogsQuery,
             foodLogsQuery,
-            examsQuery
+            examsQuery,
+            notificationsQuery
           ]);
 
           if (childrenRes.error) throw childrenRes.error;
@@ -459,6 +480,7 @@ export const useAppStore = create<AppState>()(
           const mappedMilkLogs = (milkLogsRes.data || []).map(mapDbToMilkLog);
           const mappedFoodLogs = (foodLogsRes.data || []).map(mapDbToFoodLog);
           const mappedExams = (examsRes.data || []).map(mapDbToExam);
+          const mappedNotifications = (notificationsRes.data || []).map(mapDbToNotification);
 
           // Populate the foodChecklist record from JSONB inside the children rows
           const foodChecklistRecord: Record<string, any> = {};
@@ -477,6 +499,7 @@ export const useAppStore = create<AppState>()(
             milkLogs: mappedMilkLogs,
             foodLogs: mappedFoodLogs,
             exams: mappedExams,
+            notifications: mappedNotifications,
             foodChecklist: foodChecklistRecord,
             activeChildId: get().activeChildId || (mappedChildren.length > 0 ? mappedChildren[0].id : null),
             hasLoadedData: true
@@ -983,9 +1006,84 @@ export const useAppStore = create<AppState>()(
         }
       },
 
-      markNotificationAsRead: (id) => set((state) => ({
-        notifications: state.notifications.map((n) => n.id === id ? { ...n, isRead: true } : n)
-      })),
+      markNotificationAsRead: async (id) => {
+        // 1. Optimistic Update
+        set((state) => ({
+          notifications: state.notifications.map((n) => n.id === id ? { ...n, isRead: true } : n)
+        }));
+
+        // 2. Database Sync
+        const { error } = await supabase
+          .from('notifications')
+          .update({ is_read: true })
+          .eq('id', id);
+
+        if (error) {
+          console.error('Error marking notification as read in Supabase:', error);
+        }
+      },
+
+      markAllNotificationsAsRead: async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+        const userId = get().simulatedUserId || session.user.id;
+
+        // 1. Optimistic Update
+        set((state) => ({
+          notifications: state.notifications.map((n) => ({ ...n, isRead: true }))
+        }));
+
+        // 2. Database Sync
+        const { error } = await supabase
+          .from('notifications')
+          .update({ is_read: true })
+          .eq('user_id', userId)
+          .eq('is_read', false);
+
+        if (error) {
+          console.error('Error marking all notifications as read in Supabase:', error);
+        }
+      },
+
+      addNotification: async (notification, userId) => {
+        const notificationId = crypto.randomUUID();
+        const finalNotification = {
+          ...notification,
+          id: notificationId,
+          isRead: false,
+          date: new Date().toISOString()
+        } as AppNotification;
+
+        // If it's for the current active user, update local state
+        const { data: { session } } = await supabase.auth.getSession();
+        const currentUserId = get().simulatedUserId || (session ? session.user.id : null);
+        if (currentUserId === userId) {
+          set((state) => ({
+            notifications: [finalNotification, ...state.notifications].slice(0, 10)
+          }));
+        }
+
+        // Database Sync
+        const dbNotification = {
+          id: notificationId,
+          user_id: userId,
+          title: notification.title,
+          message: notification.message,
+          type: notification.type || 'tip',
+          is_read: false
+        };
+
+        const { error } = await supabase.from('notifications').insert(dbNotification);
+        if (error) {
+          console.error('Error saving notification to Supabase:', error);
+          // Rollback local state if it was added
+          if (currentUserId === userId) {
+            set((state) => ({
+              notifications: state.notifications.filter(n => n.id !== notificationId)
+            }));
+          }
+        }
+      },
       
       toggleNotifications: (open) => set((state) => ({
         ui: { ...state.ui, notifications: { isOpen: open } }
