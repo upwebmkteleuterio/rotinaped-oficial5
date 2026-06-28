@@ -10,6 +10,41 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="RotinaPed" />
     <link rel="apple-touch-icon" href="/icon-192.png" />
+    
+    <!-- Script de Auto-Recuperação contra Tela Branca pós-deploy -->
+    <script>
+      window.addEventListener('error', function(e) {
+        if (e.target && (e.target.tagName === 'SCRIPT' || e.target.tagName === 'LINK')) {
+          const url = e.target.src || e.target.href;
+          if (url && (url.indexOf('/assets/') !== -1 || url.indexOf('index-') !== -1)) {
+            console.warn('Falha ao carregar recurso crítico. Limpando cache e recarregando...', url);
+            
+            // Limpa caches do Service Worker
+            if ('caches' in window) {
+              caches.keys().then(function(names) {
+                names.forEach(function(name) {
+                  caches.delete(name);
+                });
+              });
+            }
+            
+            // Desregistra Service Workers ativos
+            if ('serviceWorker' in navigator) {
+              navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                registrations.forEach(function(registration) {
+                  registration.unregister();
+                });
+              });
+            }
+
+            // Força o recarregamento ignorando o cache do navegador
+            setTimeout(function() {
+              window.location.reload(true);
+            }, 500);
+          }
+        }
+      }, true);
+    </script>
   </head>
   <body>
     <div id="root"></div>
