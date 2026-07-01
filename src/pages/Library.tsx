@@ -4,37 +4,60 @@ import { Card } from '../components/common/UI';
 import { 
   Search, 
   ChevronRight, 
-  Thermometer, 
-  Wind, 
-  Droplet, 
-  UtensilsCrossed, 
-  Moon, 
   ArrowRight,
   ShieldCheck
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import * as Icons from 'lucide-react';
+import { motion } from 'motion/react';
 import { cn } from '../lib/utils';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import ArticleModal from '../components/library/ArticleModal';
 import { LibraryArticle } from '../types';
 
+// Dynamic Icon Renderer
+const DynamicIcon = ({ name, className }: { name: string; className?: string }) => {
+  const IconComponent = (Icons as any)[name] || Icons.BookOpen;
+  return <IconComponent className={className} />;
+};
+
+// Helper to map color ID to Tailwind classes
+const getCategoryColorClasses = (colorId: string) => {
+  switch (colorId) {
+    case 'rose': return 'bg-rose-50 text-rose-500';
+    case 'blue': return 'bg-blue-50 text-brand-blue';
+    case 'emerald': return 'bg-emerald-50 text-emerald-500';
+    case 'amber': return 'bg-amber-50 text-amber-600';
+    case 'slate': return 'bg-slate-50 text-slate-500';
+    case 'purple': return 'bg-purple-50 text-purple-500';
+    case 'pink': return 'bg-pink-50 text-pink-500';
+    case 'indigo': return 'bg-indigo-50 text-indigo-500';
+    default: return 'bg-blue-50 text-brand-blue';
+  }
+};
+
 export default function Library() {
-  const { libraryArticles } = useAppStore();
+  const { libraryCategories, libraryArticles } = useAppStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedArticle, setSelectedArticle] = useState<LibraryArticle | null>(null);
+  const location = useLocation();
 
-  const themes = [
-    { id: 'febre', label: 'Febre', icon: Thermometer, color: 'bg-rose-50 text-rose-500', sub: 'Controle e manejo' },
-    { id: 'respiratorio', label: 'Doenças Respiratórias', icon: Wind, color: 'bg-blue-50 text-brand-blue', sub: 'Tosse, gripe e asma' },
-    { id: 'lavagem_nasal', label: 'Guia de Lavagem Nasal', icon: Droplet, color: 'bg-emerald-50 text-emerald-500', sub: 'Passo a passo seguro' },
-    { id: 'alimentacao', label: 'Introdução Alimentar', icon: UtensilsCrossed, color: 'bg-amber-50 text-amber-600', sub: 'Primeiras papinhas e BLW' },
-    { id: 'sono', label: 'Sono e Rotina', icon: Moon, color: 'bg-slate-50 text-slate-500', sub: 'Higiene do sono e ciclos', isNew: true },
-  ];
+  // Handle opening article passed via router state (e.g. from Dashboard "Dicas de Hoje")
+  useEffect(() => {
+    if (location.state?.openArticleId && libraryArticles.length > 0) {
+      const article = libraryArticles.find(a => a.id === location.state.openArticleId);
+      if (article) {
+        setSelectedArticle(article);
+        // Clear state so it doesn't reopen on refresh
+        window.history.replaceState({}, document.title);
+      }
+    }
+  }, [location.state, libraryArticles]);
 
   const featuredArticle = libraryArticles.find(a => a.isFeatured) || libraryArticles[0];
 
-  const filteredThemes = themes.filter(t => 
-    t.label.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredCategories = libraryCategories.filter(c => 
+    c.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const filteredArticles = libraryArticles.filter(a => 
@@ -42,10 +65,15 @@ export default function Library() {
     a.summary.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const openArticleByCategory = (category: string) => {
-    const article = libraryArticles.find(a => a.category === category);
+  const openArticleByCategory = (categoryId: string) => {
+    const article = libraryArticles.find(a => 
+      a.categoryId === categoryId || 
+      (typeof a.category === 'object' && a.category && a.category.id === categoryId)
+    );
     if (article) {
       setSelectedArticle(article);
+    } else {
+      alert('Nenhum artigo cadastrado para esta categoria ainda.');
     }
   };
 
@@ -81,10 +109,10 @@ export default function Library() {
                       onClick={() => setSelectedArticle(article)}
                       className="p-5 flex gap-4 bg-white border border-slate-100 group cursor-pointer active:scale-[0.98] transition-all"
                     >
-                      <div className="w-20 h-20 rounded-2xl overflow-hidden shrink-0">
-                         <img src={article.imageUrl} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                      <div className="w-20 h-20 rounded-2xl overflow-hidden shrink-0 border border-slate-100">
+                         <img src={article.imageUrl || 'https://picsum.photos/seed/doc/200/200'} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                       </div>
-                      <div className="flex flex-col justify-center">
+                      <div className="flex flex-col justify-center min-w-0 flex-1">
                          <h4 className="font-bold text-slate-800 tracking-tight group-hover:text-brand-blue transition-colors line-clamp-1">{article.title}</h4>
                          <p className="text-[10px] text-slate-400 font-medium line-clamp-2 mt-1">{article.summary}</p>
                       </div>
@@ -156,36 +184,31 @@ export default function Library() {
         <section className="space-y-6">
           <h3 className="text-2xl font-bold text-slate-800 tracking-tight">Explorar por Temas</h3>
           <div className="space-y-4">
-            {filteredThemes.map((topic) => (
-              <motion.div 
-                key={topic.id} 
-                whileTap={{ scale: 0.98 }}
-              >
-                <Card 
-                  onClick={() => openArticleByCategory(topic.id)}
-                  className={cn(
-                    "p-6 flex items-center justify-between group transition-all",
-                    topic.id === 'lavagem_nasal' ? "bg-emerald-50/50 border border-emerald-100" : "bg-white border border-slate-100"
-                  )}
+            {filteredCategories.map((category) => {
+              const colorClasses = getCategoryColorClasses(category.color || 'blue');
+              return (
+                <motion.div 
+                  key={category.id} 
+                  whileTap={{ scale: 0.98 }}
                 >
-                  <div className="flex gap-5">
-                    <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center transition-transform group-hover:rotate-6", topic.color)}>
-                      <topic.icon className="w-7 h-7" />
-                    </div>
-                    <div className="flex flex-col justify-center">
-                      <div className="flex items-center gap-2">
-                        <h4 className="font-bold text-slate-800 tracking-tight">{topic.label}</h4>
-                        {topic.isNew && (
-                          <span className="bg-blue-100 text-brand-blue text-[8px] font-bold px-1.5 py-0.5 rounded tracking-widest uppercase">Novo</span>
-                        )}
+                  <Card 
+                    onClick={() => openArticleByCategory(category.id)}
+                    className="p-6 flex items-center justify-between group transition-all bg-white border border-slate-100"
+                  >
+                    <div className="flex gap-5">
+                      <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center transition-transform group-hover:rotate-6", colorClasses)}>
+                        <DynamicIcon name={category.icon} className="w-7 h-7" />
                       </div>
-                      <p className="text-xs text-slate-400 font-medium">{topic.sub}</p>
+                      <div className="flex flex-col justify-center">
+                        <h4 className="font-bold text-slate-800 tracking-tight">{category.name}</h4>
+                        <p className="text-xs text-slate-400 font-medium">Ver orientações</p>
+                      </div>
                     </div>
-                  </div>
-                  <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-brand-blue transition-colors" />
-                </Card>
-              </motion.div>
-            ))}
+                    <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-brand-blue transition-colors" />
+                  </Card>
+                </motion.div>
+              );
+            })}
           </div>
         </section>
 

@@ -28,6 +28,7 @@ import { AdminRoute } from './components/common/AdminRoute';
 import { AdminLayout } from './components/layout/AdminLayout';
 import AdminUsers from './pages/admin/AdminUsers';
 import AdminPlans from './pages/admin/AdminPlans';
+import AdminLibrary from './pages/admin/AdminLibrary';
 import { Baby } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
@@ -98,6 +99,7 @@ function AppContent() {
           <Routes>
             <Route path="/admin/users" element={<AdminUsers />} />
             <Route path="/admin/plans" element={<AdminPlans />} />
+            <Route path="/admin/library" element={<AdminLibrary />} />
             <Route path="/admin/*" element={<Navigate to="/admin/users" replace />} />
           </Routes>
         </AdminLayout>

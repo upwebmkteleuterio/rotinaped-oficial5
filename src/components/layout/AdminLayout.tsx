@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Users,
   CreditCard,
+  BookOpen,
   ArrowLeft,
   Menu,
   X,
@@ -23,15 +24,20 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   const navigate = useNavigate();
 
   const menuItems = [
-    { 
-      path: '/admin/users', 
-      label: 'Usuários/Clientes', 
-      icon: Users 
+    {
+      path: '/admin/users',
+      label: 'Usuários/Clientes',
+      icon: Users
     },
-    { 
-      path: '/admin/plans', 
-      label: 'Gestão de Planos', 
-      icon: CreditCard 
+    {
+      path: '/admin/plans',
+      label: 'Gestão de Planos',
+      icon: CreditCard
+    },
+    {
+      path: '/admin/library',
+      label: 'Biblioteca de Orientações',
+      icon: BookOpen
     }
   ];
 

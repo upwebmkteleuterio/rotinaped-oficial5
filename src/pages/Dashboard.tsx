@@ -11,7 +11,7 @@ import NotificationModal from '../components/notifications/NotificationModal';
 import CustomAIIcon from '../components/common/CustomAIIcon';
 
 export default function Dashboard() {
-  const { children, activeChildId, vaccines, measurements, dailyTips, exams, toggleNotifications, notifications } = useAppStore();
+  const { children, activeChildId, vaccines, measurements, libraryArticles, exams, toggleNotifications, notifications } = useAppStore();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
 
@@ -23,12 +23,20 @@ export default function Dashboard() {
     return () => clearTimeout(timer);
   }, []);
   
-  // Select a tip based on the day of the year
+  // Select the most recently published article as the tip of the day
   const todayTip = useMemo(() => {
-    if (!dailyTips || dailyTips.length === 0) return null;
-    const dayOfYear = Math.floor((new Date().getTime() - new Date(new Date().getFullYear(), 0, 0).getTime()) / (1000 * 60 * 60 * 24));
-    return dailyTips[dayOfYear % dailyTips.length];
-  }, [dailyTips]);
+    if (!libraryArticles || libraryArticles.length === 0) return null;
+    const latestArticle = libraryArticles[0];
+    return {
+      id: latestArticle.id,
+      title: latestArticle.title,
+      description: latestArticle.summary,
+      imageUrl: latestArticle.imageUrl || 'https://picsum.photos/seed/doc/800/1000',
+      category: typeof latestArticle.category === 'object' && latestArticle.category
+        ? (latestArticle.category as any).name
+        : 'Orientação'
+    };
+  }, [libraryArticles]);
 
 
   const calculateAge = (child: any) => {
@@ -443,7 +451,7 @@ export default function Dashboard() {
         <section className="pt-4 space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-2xl font-bold text-slate-800">Dicas de Hoje</h3>
-            <button 
+            <button
               onClick={() => navigate('/library')}
               className="text-xs font-bold text-brand-blue uppercase tracking-wider"
             >
@@ -451,8 +459,8 @@ export default function Dashboard() {
             </button>
           </div>
           {todayTip && (
-            <motion.div 
-              onClick={() => navigate('/library')}
+            <motion.div
+              onClick={() => navigate('/library', { state: { openArticleId: todayTip.id } })}
               whileTap={{ scale: 0.98 }}
               className="aspect-[4/3] relative rounded-[2.5rem] overflow-hidden group shadow-lg cursor-pointer bg-slate-200"
             >
