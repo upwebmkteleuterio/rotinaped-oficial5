@@ -117,25 +117,15 @@ export interface Exam {
   resultDate?: string;
 }
 
-export interface LibraryCategory {
-  id: string;
-  name: string;
-  icon: string;
-  color?: string;
-  created_at?: string;
-}
-
 export interface LibraryArticle {
   id: string;
   title: string;
   summary: string;
-  category: string | LibraryCategory;
-  categoryId?: string;
+  category: 'febre' | 'respiratorio' | 'lavagem_nasal' | 'alimentacao' | 'sono';
   content: string;
   imageUrl?: string;
   authoritativeSources?: string[];
   isFeatured?: boolean;
-  createdAt?: string;
 }
 
 export interface DailyTip {

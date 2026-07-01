@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { supabase } from '@/integrations/supabase/client';
-import { Child, Measurement, Vaccine, ChildMilestone, Exam, LibraryCategory, LibraryArticle, Reminder, MilkLog, AppNotification, DailyTip, FoodLog } from '../types';
+import { Child, Measurement, Vaccine, ChildMilestone, Exam, LibraryArticle, Reminder, MilkLog, AppNotification, DailyTip, FoodLog } from '../types';
 
 // MAPPER FUNCTIONS: SNAKE_CASE (POSTGRES) TO CAMELCASE (TYPESCRIPT)
 
@@ -262,30 +262,6 @@ const mapNotificationToDb = (ts: Partial<AppNotification>, userId: string) => ({
   is_read: ts.isRead || false,
 });
 
-const mapDbToCategory = (db: any): LibraryCategory => ({
-  id: db.id,
-  name: db.name,
-  icon: db.icon,
-  color: db.color || 'blue',
-  created_at: db.created_at,
-});
-
-const mapDbToArticle = (db: any, categories: LibraryCategory[]): LibraryArticle => {
-  const categoryObj = categories.find(c => c.id === db.category_id);
-  return {
-    id: db.id,
-    title: db.title,
-    summary: db.summary,
-    category: categoryObj || db.category_id || '',
-    categoryId: db.category_id,
-    content: db.content,
-    imageUrl: db.image_url || undefined,
-    authoritativeSources: db.authoritative_sources || [],
-    isFeatured: db.is_featured || false,
-    createdAt: db.created_at,
-  };
-};
-
 interface AppState {
   simulatedUserId: string | null;
   simulatedUserEmail: string | null;
@@ -296,7 +272,6 @@ interface AppState {
   vaccines: Vaccine[];
   childMilestones: ChildMilestone[];
   exams: Exam[];
-  libraryCategories: LibraryCategory[];
   libraryArticles: LibraryArticle[];
   reminders: Reminder[];
   milkLogs: MilkLog[];
@@ -385,8 +360,27 @@ export const useAppStore = create<AppState>()(
       vaccines: [],
       childMilestones: [],
       exams: [],
-      libraryCategories: [],
-      libraryArticles: [],
+      libraryArticles: [
+        {
+          id: 'art-intro',
+          title: 'Introdução Alimentar do Bebê',
+          summary: 'Guia completo de introdução aos sólidos passo a passo com sinais de prontidão.',
+          category: 'alimentacao',
+          content: '### Introdução Alimentar\nAos 6 meses, o bebê apresenta sinais de prontidão fundamentais:\n- **Sustentação do tronco:** Sentar sem apoio ou com mínimo apoio.\n- **Reflexo de protrusão diminuído:** Não empurrar a comida para fora com a língua.\n- **Interesse pelos alimentos:** Olhar, tentar pegar e levar coisas à boca.\n\n### Como oferecer:\nComece com consistência amassada (nunca liquidificada ou peneirada). Ofereça variedade de grupos alimentares (carboidratos, proteínas, legumes/hortaliças e frutas).\n\n### Métodos:\n- **Tradicional:** Papinha oferecida na colher.\n- **BLW (Baby-Led Weaning):** Alimentos em pedaços e formatos seguros para o bebê pegar e comer sozinho.',
+          imageUrl: 'https://picsum.photos/seed/babyfood/800/600',
+          authoritativeSources: ['SBP', 'OMS'],
+          isFeatured: true
+        },
+        {
+          id: 'art-sleep',
+          title: 'Sono e Higiene do Sono',
+          summary: 'Dicas práticas para estabelecer uma rotina saudável e melhorar as noites da família.',
+          category: 'sono',
+          content: '### A importância do sono\nO sono é fundamental para o desenvolvimento cerebral e crescimento físico (liberação do GH).\n\n### Higiene do Sono:\n- **Ambiente:** Escuro, silencioso e com temperatura agradável.\n- **Rotina:** Atividades calmas antes de dormir (banho morno, massagem, leitura).\n- **Horários:** Tente manter uma constância nos horários de sonecas e sono noturno.\n- **Dica:** Evite telas (TV, Celular) pelo menos 1 hora antes do sono.',
+          imageUrl: 'https://picsum.photos/seed/sleep/800/600',
+          authoritativeSources: ['SBP']
+        }
+      ],
       reminders: [],
       milkLogs: [],
       foodLogs: [],
@@ -429,7 +423,7 @@ export const useAppStore = create<AppState>()(
           const { data: { session } } = await supabase.auth.getSession();
           if (!session) return;
 
-          const targetUserId = get().simulatedUserId || session.user.id;
+          const targetUserId = get().simulatedUserId;
 
           let childrenQuery = supabase.from('children').select('*').order('created_at', { ascending: true });
           let measurementsQuery = supabase.from('measurements').select('*').order('date', { ascending: true });
@@ -440,8 +434,6 @@ export const useAppStore = create<AppState>()(
           let foodLogsQuery = supabase.from('food_logs').select('*').order('date', { ascending: false });
           let examsQuery = supabase.from('exams').select('*').order('date', { ascending: false });
           let notificationsQuery = supabase.from('notifications').select('*').order('created_at', { ascending: false }).limit(10);
-          let categoriesQuery = supabase.from('library_categories').select('*').order('name', { ascending: true });
-          let articlesQuery = supabase.from('library_articles').select('*').order('created_at', { ascending: false });
 
           if (targetUserId) {
             childrenQuery = childrenQuery.eq('user_id', targetUserId);
@@ -465,9 +457,7 @@ export const useAppStore = create<AppState>()(
             milkLogsRes,
             foodLogsRes,
             examsRes,
-            notificationsRes,
-            categoriesRes,
-            articlesRes
+            notificationsRes
           ] = await Promise.all([
             childrenQuery,
             measurementsQuery,
@@ -477,9 +467,7 @@ export const useAppStore = create<AppState>()(
             milkLogsQuery,
             foodLogsQuery,
             examsQuery,
-            notificationsQuery,
-            categoriesQuery,
-            articlesQuery
+            notificationsQuery
           ]);
 
           if (childrenRes.error) throw childrenRes.error;
@@ -493,8 +481,6 @@ export const useAppStore = create<AppState>()(
           const mappedFoodLogs = (foodLogsRes.data || []).map(mapDbToFoodLog);
           const mappedExams = (examsRes.data || []).map(mapDbToExam);
           const mappedNotifications = (notificationsRes.data || []).map(mapDbToNotification);
-          const mappedCategories = (categoriesRes.data || []).map(mapDbToCategory);
-          const mappedArticles = (articlesRes.data || []).map(db => mapDbToArticle(db, mappedCategories));
 
           // Populate the foodChecklist record from JSONB inside the children rows
           const foodChecklistRecord: Record<string, any> = {};
@@ -514,8 +500,6 @@ export const useAppStore = create<AppState>()(
             foodLogs: mappedFoodLogs,
             exams: mappedExams,
             notifications: mappedNotifications,
-            libraryCategories: mappedCategories,
-            libraryArticles: mappedArticles,
             foodChecklist: foodChecklistRecord,
             activeChildId: get().activeChildId || (mappedChildren.length > 0 ? mappedChildren[0].id : null),
             hasLoadedData: true
@@ -1202,8 +1186,6 @@ export const useAppStore = create<AppState>()(
         vaccines: [],
         childMilestones: [],
         exams: [],
-        libraryCategories: [],
-        libraryArticles: [],
         reminders: [],
         milkLogs: [],
         foodLogs: [],
@@ -1214,7 +1196,7 @@ export const useAppStore = create<AppState>()(
       }),
     }),
     {
-      name: 'rotinaped-storage-supabase-v2',
+      name: 'rotinaped-storage-supabase-v1',
       storage: createJSONStorage(() => storageWrapper),
     }
   )
