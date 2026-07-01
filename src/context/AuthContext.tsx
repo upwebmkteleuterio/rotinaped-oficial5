@@ -45,6 +45,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
+    // Mecanismo de Segurança: Força um logout único para sincronizar a sessão com o novo cache v2
+    const hasCleared = localStorage.getItem('rotinaped_v2_sync_cleared');
+    if (!hasCleared) {
+      localStorage.setItem('rotinaped_v2_sync_cleared', 'true');
+      supabase.auth.signOut().then(() => {
+        window.location.reload();
+      });
+      return;
+    }
+
     // 1. Get initial session immediately
     supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
       handleSession(initialSession);

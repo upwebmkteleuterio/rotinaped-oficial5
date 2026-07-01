@@ -429,7 +429,7 @@ export const useAppStore = create<AppState>()(
           const { data: { session } } = await supabase.auth.getSession();
           if (!session) return;
 
-          const targetUserId = get().simulatedUserId;
+          const targetUserId = get().simulatedUserId || session.user.id;
 
           let childrenQuery = supabase.from('children').select('*').order('created_at', { ascending: true });
           let measurementsQuery = supabase.from('measurements').select('*').order('date', { ascending: true });
