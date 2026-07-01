@@ -1214,7 +1214,7 @@ export const useAppStore = create<AppState>()(
       }),
     }),
     {
-      name: 'rotinaped-storage-supabase-v1',
+      name: 'rotinaped-storage-supabase-v2',
       storage: createJSONStorage(() => storageWrapper),
     }
   )
