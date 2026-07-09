@@ -48,7 +48,6 @@ allowBuilds:
   "@fingerprintjs/fingerprintjs-pro-react": true
   "@ghaiklor/x509": true
   "@go-task/cli": true
-  '@google/genai': set this to true or false
   "@injectivelabs/sdk-ts": true
   "@instana/autoprofile": true
   "@intlify/vue-i18n-bridge": true
@@ -293,7 +292,6 @@ allowBuilds:
   pre-commit: true
   pre-push: true
   prisma: true
-  protobufjs: set this to true or false
   protoc: true
   protoc-gen-grpc-web: true
   puppeteer: true
