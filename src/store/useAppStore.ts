@@ -421,31 +421,22 @@ export const useAppStore = create<AppState>()(
       loadAllData: async () => {
         try {
           const { data: { session } } = await supabase.auth.getSession();
-          if (!session) return;
-
-          const targetUserId = get().simulatedUserId;
-
-          let childrenQuery = supabase.from('children').select('*').order('created_at', { ascending: true });
-          let measurementsQuery = supabase.from('measurements').select('*').order('date', { ascending: true });
-          let vaccinesQuery = supabase.from('vaccines').select('*').order('date', { ascending: true });
-          let milestonesQuery = supabase.from('child_milestones').select('*');
-          let remindersQuery = supabase.from('reminders').select('*').order('created_at', { ascending: false });
-          let milkLogsQuery = supabase.from('milk_logs').select('*').order('date', { ascending: false });
-          let foodLogsQuery = supabase.from('food_logs').select('*').order('date', { ascending: false });
-          let examsQuery = supabase.from('exams').select('*').order('date', { ascending: false });
-          let notificationsQuery = supabase.from('notifications').select('*').order('created_at', { ascending: false }).limit(10);
-
-          if (targetUserId) {
-            childrenQuery = childrenQuery.eq('user_id', targetUserId);
-            measurementsQuery = measurementsQuery.eq('user_id', targetUserId);
-            vaccinesQuery = vaccinesQuery.eq('user_id', targetUserId);
-            milestonesQuery = milestonesQuery.eq('user_id', targetUserId);
-            remindersQuery = remindersQuery.eq('user_id', targetUserId);
-            milkLogsQuery = milkLogsQuery.eq('user_id', targetUserId);
-            foodLogsQuery = foodLogsQuery.eq('user_id', targetUserId);
-            examsQuery = examsQuery.eq('user_id', targetUserId);
-            notificationsQuery = notificationsQuery.eq('user_id', targetUserId);
+          if (!session) {
+            set({ hasLoadedData: true });
+            return;
           }
+
+          const userId = get().simulatedUserId || session.user.id;
+
+          const childrenQuery = supabase.from('children').select('*').eq('user_id', userId).order('created_at', { ascending: true });
+          const measurementsQuery = supabase.from('measurements').select('*').eq('user_id', userId).order('date', { ascending: true });
+          const vaccinesQuery = supabase.from('vaccines').select('*').eq('user_id', userId).order('date', { ascending: true });
+          const milestonesQuery = supabase.from('child_milestones').select('*').eq('user_id', userId);
+          const remindersQuery = supabase.from('reminders').select('*').eq('user_id', userId).order('created_at', { ascending: false });
+          const milkLogsQuery = supabase.from('milk_logs').select('*').eq('user_id', userId).order('date', { ascending: false });
+          const foodLogsQuery = supabase.from('food_logs').select('*').eq('user_id', userId).order('date', { ascending: false });
+          const examsQuery = supabase.from('exams').select('*').eq('user_id', userId).order('date', { ascending: false });
+          const notificationsQuery = supabase.from('notifications').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(10);
 
           // Parallel query execution
           const [

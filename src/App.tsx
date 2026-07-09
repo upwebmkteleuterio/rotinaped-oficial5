@@ -43,31 +43,21 @@ function AppContent() {
   useEffect(() => {
     const timer = setTimeout(() => {
       setShowSplash(false);
-    }, 3000); // Exibe por exatos 3 segundos
+    }, 1200); // Reduzido de 3s para 1.2s para melhor UX
     return () => clearTimeout(timer);
   }, []);
 
-  const isStoreLoading = user && !hasLoadedData;
+  // Removed isStoreLoading check to prevent stuck screens.
+  // Dashboard already handles data loading with skeletons.
 
   // 1. Splash Screen
   if (showSplash) {
     return <SplashScreen />;
   }
 
-  // 2. Loading Screen (Se o banco de dados Supabase ainda estiver baixando informações em background)
-  if (loading || isStoreLoading) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50">
-        <div className="flex flex-col items-center space-y-4">
-          <div className="w-16 h-16 bg-[#1b6392] rounded-2xl flex items-center justify-center shadow-lg animate-bounce">
-            <Baby className="w-8 h-8 text-white" />
-          </div>
-          <div className="text-slate-500 text-sm font-medium animate-pulse">
-            Sincronizando RotinaPed...
-          </div>
-        </div>
-      </div>
-    );
+  // 2. Loading Screen (Apenas se a autenticação estiver carregando)
+  if (loading) {
+    return null;
   }
 
   // 3. Auth Protection Gate
@@ -76,7 +66,7 @@ function AppContent() {
   }
 
   // 4. Onboarding Gate: Se não houver nenhum filho registrado, força o registro do primeiro filho
-  const hasNoProfiles = children.length === 0;
+  const hasNoProfiles = hasLoadedData && children.length === 0;
   const isAllowedPath = location.pathname === '/profiles' || location.pathname.includes('dev-test-runner');
   
   if (hasNoProfiles && !isAllowedPath) {
