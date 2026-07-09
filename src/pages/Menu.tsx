@@ -26,10 +26,8 @@ export default function Menu() {
   const activeChild = children.find(c => c.id === activeChildId) || children[0];
 
   const handleLogout = async () => {
-    if (window.confirm('Tem certeza que deseja sair? Seus dados locais serão apagados.')) {
-      reset();
-      await signOut();
-    }
+    reset();
+    await signOut();
   };
 
   const profileType = activeChild?.profileType || 'child';
