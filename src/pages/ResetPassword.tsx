@@ -12,9 +12,22 @@ export default function ResetPassword() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [sessionCheck, setSessionCheck] = useState(true);
   const navigate = useNavigate();
 
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (!data.session) {
+        setError('Sessão expirada ou link inválido. Por favor, solicite uma nova recuperação de senha.');
+        setSessionCheck(false);
+      }
+    };
+    checkSession();
+  }, []);
+
   const handleResetPassword = async (e: React.FormEvent) => {
+
     e.preventDefault();
     if (password !== confirmPassword) {
       setError('As senhas não coincidem');
@@ -119,20 +132,22 @@ export default function ResetPassword() {
                   </motion.div>
                 )}
 
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full bg-[#1b6392] text-white py-3.5 rounded-2xl text-sm font-bold shadow-md shadow-blue-900/10 hover:bg-[#134e75] active:scale-98 transition-all flex items-center justify-center gap-2 mt-2"
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                      Redefinindo...
-                    </>
-                  ) : (
-                    'Redefinir Senha'
-                  )}
-                </button>
+                {sessionCheck && (
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full bg-[#1b6392] text-white py-3.5 rounded-2xl text-sm font-bold shadow-md shadow-blue-900/10 hover:bg-[#134e75] active:scale-98 transition-all flex items-center justify-center gap-2 mt-2"
+                  >
+                    {loading ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                        Redefinindo...
+                      </>
+                    ) : (
+                      'Redefinir Senha'
+                    )}
+                  </button>
+                )}
 
                 <button
                   type="button"

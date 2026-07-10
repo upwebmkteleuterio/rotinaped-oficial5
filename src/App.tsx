@@ -53,8 +53,9 @@ function AppContent() {
 
     // Listen for password recovery event
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      console.log("Auth Event:", event);
       if (event === 'PASSWORD_RECOVERY') {
-        navigate('/reset-password');
+        navigate('/reset-password', { replace: true });
       }
     });
 
@@ -78,10 +79,19 @@ function AppContent() {
   }
 
   // 3. Auth Protection Gate
-  if (!user) {
+  // Se estiver na rota de reset, permitimos o acesso independente do estado do user
+  // (O Supabase injeta a sessão temporária para permitir o updatePassword)
+  if (location.pathname === '/reset-password') {
     return (
       <Routes>
         <Route path="/reset-password" element={<ResetPassword />} />
+      </Routes>
+    );
+  }
+
+  if (!user) {
+    return (
+      <Routes>
         <Route path="*" element={<Login />} />
       </Routes>
     );
@@ -89,7 +99,9 @@ function AppContent() {
 
   // 4. Onboarding Gate: Se não houver nenhum filho registrado, força o registro do primeiro filho
   const hasNoProfiles = hasLoadedData && children.length === 0;
-  const isAllowedPath = location.pathname === '/profiles' || location.pathname.includes('dev-test-runner');
+  const isAllowedPath = location.pathname === '/profiles' ||
+                        location.pathname === '/reset-password' ||
+                        location.pathname.includes('dev-test-runner');
   
   if (hasNoProfiles && !isAllowedPath) {
     return <Navigate to="/profiles" replace />;
