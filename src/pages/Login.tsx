@@ -14,6 +14,7 @@ export default function Login() {
   
   // Loading and feedback states
   const [loading, setLoading] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
@@ -105,6 +106,32 @@ export default function Login() {
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    if (!email) {
+      setErrorMsg('Por favor, digite seu e-mail para recuperar a senha.');
+      return;
+    }
+
+    setResetLoading(true);
+    setErrorMsg(null);
+    setSuccessMsg(null);
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+
+      if (error) throw error;
+
+      setSuccessMsg('E-mail de recuperação enviado! Verifique sua caixa de entrada.');
+    } catch (err: any) {
+      console.error('Erro ao enviar recuperação:', err);
+      setErrorMsg(err.message || 'Erro ao enviar e-mail de recuperação.');
+    } finally {
+      setResetLoading(false);
     }
   };
 
@@ -278,7 +305,22 @@ export default function Login() {
             </div>
           </div>
 
+          {mode === 'signin' && (
+            <div className="flex justify-end px-1">
+              <button
+                type="button"
+                onClick={handleForgotPassword}
+                disabled={resetLoading}
+                className="text-[10px] font-bold text-slate-400 hover:text-[#1b6392] transition-colors flex items-center gap-1"
+              >
+                {resetLoading ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : null}
+                Esqueceu a senha?
+              </button>
+            </div>
+          )}
+
           <button
+
             type="submit"
             disabled={loading}
             className="w-full bg-[#1b6392] text-white py-3.5 rounded-2xl text-sm font-bold shadow-md shadow-blue-900/10 hover:bg-[#134e75] active:scale-98 transition-all flex items-center justify-center gap-2 mt-2"

@@ -21,14 +21,20 @@ import AISupport from './pages/AISupport';
 import TestRunner from './pages/TestRunner';
 import Navbar from './components/layout/Navbar';
 import Login from './pages/Login';
+import ResetPassword from './pages/ResetPassword';
 import SplashScreen from './components/common/SplashScreen';
+
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { supabase } from './integrations/supabase/client';
 import { useAppStore } from './store/useAppStore';
+
 import { AdminRoute } from './components/common/AdminRoute';
 import { AdminLayout } from './components/layout/AdminLayout';
 import AdminUsers from './pages/admin/AdminUsers';
 import AdminPlans from './pages/admin/AdminPlans';
+import BulkNotifications from './pages/admin/BulkNotifications';
 import { Baby } from 'lucide-react';
+
 import { useState, useEffect } from 'react';
 
 function AppContent() {
@@ -44,8 +50,19 @@ function AppContent() {
     const timer = setTimeout(() => {
       setShowSplash(false);
     }, 1200); // Reduzido de 3s para 1.2s para melhor UX
-    return () => clearTimeout(timer);
-  }, []);
+
+    // Listen for password recovery event
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        navigate('/reset-password');
+      }
+    });
+
+    return () => {
+      clearTimeout(timer);
+      subscription.unsubscribe();
+    };
+  }, [navigate]);
 
   // Removed isStoreLoading check to prevent stuck screens.
   // Dashboard already handles data loading with skeletons.
@@ -62,7 +79,12 @@ function AppContent() {
 
   // 3. Auth Protection Gate
   if (!user) {
-    return <Login />;
+    return (
+      <Routes>
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="*" element={<Login />} />
+      </Routes>
+    );
   }
 
   // 4. Onboarding Gate: Se não houver nenhum filho registrado, força o registro do primeiro filho
@@ -88,8 +110,10 @@ function AppContent() {
           <Routes>
             <Route path="/admin/users" element={<AdminUsers />} />
             <Route path="/admin/plans" element={<AdminPlans />} />
+            <Route path="/admin/notifications" element={<BulkNotifications />} />
             <Route path="/admin/*" element={<Navigate to="/admin/users" replace />} />
           </Routes>
+
         </AdminLayout>
       </AdminRoute>
     );

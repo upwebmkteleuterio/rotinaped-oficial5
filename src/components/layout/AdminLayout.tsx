@@ -3,11 +3,13 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Users,
   CreditCard,
+  Bell,
   ArrowLeft,
   Menu,
   X,
   LogOut
 } from 'lucide-react';
+
 import { useAuth } from '@/context/AuthContext';
 import DataBridgeProbe from '../dev/DataBridgeProbe';
 
@@ -28,10 +30,15 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       label: 'Usuários/Clientes', 
       icon: Users 
     },
-    { 
-      path: '/admin/plans', 
-      label: 'Gestão de Planos', 
-      icon: CreditCard 
+    {
+      path: '/admin/plans',
+      label: 'Gestão de Planos',
+      icon: CreditCard
+    },
+    {
+      path: '/admin/notifications',
+      label: 'Disparos em Massa',
+      icon: Bell
     }
   ];
 
