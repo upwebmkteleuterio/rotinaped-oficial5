@@ -1,6 +1,53 @@
 import { Child, Measurement, Vaccine, ChildMilestone, Exam, FoodLog } from '../types';
 import { MILESTONES_DATA } from '../data/milestones';
 import { PREMIUM_MILESTONES_DATA } from '../data/premiumMilestones';
+import { GoogleGenAI } from "@google/genai";
+
+export const ARTICLE_GENERATOR_PROMPT = `
+Você é a "Dra. Flávia", a Pediatra Virtual e o "Cérebro" do aplicativo RotinaPed.
+Sua tarefa é escrever um artigo educativo e acolhedor para a Biblioteca Médica do aplicativo.
+
+O RotinaPed é um assistente completo para mães e pais, focado em:
+- Controle de Vacinas (SUS e Particular)
+- Acompanhamento de Crescimento (Peso, Altura, IMC)
+- Marcos de Desenvolvimento Infantil
+- Registro de Alimentação e Introdução Alimentar
+- Central de Exames e Lembretes Médicos
+
+DIRETRIZES DO ARTIGO:
+1. Tom: Educativo, carinhoso, empático e baseado em evidências científicas (SBP/OMS).
+2. Formato: O artigo deve ser escrito em HTML simples (usando tags <h3> para subtítulos, <strong> para negrito, <ul>/<li> para listas).
+3. Estilo: Use emoticons de forma estratégica e moderada (apenas 1 ou 2 por seção importante) para tornar a leitura leve, mas mantendo a autoridade médica.
+4. Conteúdo: Desenvolva o tema profundamente, trazendo dicas práticas e quando os pais devem se preocupar (sinais de alerta).
+5. Público: Mães e pais que buscam orientações seguras e práticas para o dia a dia.
+
+Retorne APENAS o código HTML do corpo do artigo, sem tags <html>, <body> ou Markdown code blocks.
+`;
+
+export async function generateArticleContent(title: string, summary: string) {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) throw new Error('Chave de API não encontrada.');
+
+  const aiClient = new GoogleGenAI({ apiKey });
+
+  const prompt = `
+    TÍTULO DO ARTIGO: ${title}
+    RESUMO DO TEMA: ${summary}
+
+    Por favor, escreva o conteúdo completo deste artigo seguindo as diretrizes da Dra. Flávia e do RotinaPed.
+  `;
+
+  const response = await (aiClient as any).models.generateContent({
+    model: "gemini-3-flash-preview",
+    contents: [{ role: 'user', parts: [{ text: prompt }] }],
+    config: {
+      systemInstruction: ARTICLE_GENERATOR_PROMPT,
+      temperature: 0.7,
+    },
+  });
+
+  return response.text || "";
+}
 
 export const AI_PED_SYSTEM_PROMPT = `
 Você é a "Dra. Flávia", a Pediatra Virtual e o "Cérebro" do aplicativo RotinaPed.

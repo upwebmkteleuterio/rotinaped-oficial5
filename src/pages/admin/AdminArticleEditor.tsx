@@ -1,19 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { 
-  ArrowLeft, 
-  Save, 
-  Image as ImageIcon, 
-  Upload, 
-  X, 
-  RefreshCw, 
+import {
+  ArrowLeft,
+  Save,
+  Image as ImageIcon,
+  Upload,
+  X,
+  RefreshCw,
   AlertCircle,
   Check,
   Type,
   FileText,
-  Tag
+  Tag,
+  Sparkles
 } from 'lucide-react';
 import { libraryService, Article, Category } from '@/services/libraryService';
+import { generateArticleContent } from '@/services/aiService';
 import RichTextEditor from '@/components/common/RichTextEditor';
 import { cn } from '@/lib/utils';
 
@@ -26,6 +28,7 @@ export default function AdminArticleEditor() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [generatingAi, setGeneratingAi] = useState(false);
 
   // Form State
   const [title, setTitle] = useState('');
@@ -37,6 +40,26 @@ export default function AdminArticleEditor() {
   
   const [categories, setCategories] = useState<Category[]>([]);
   const [uploadingImage, setUploadingImage] = useState(false);
+
+  const handleGenerateWithAI = async () => {
+    if (!title.trim() || !summary.trim()) return;
+
+    setGeneratingAi(true);
+    setError(null);
+    try {
+      const generatedContent = await generateArticleContent(title, summary);
+      // Limpa possíveis Markdown code blocks que a IA possa retornar por engano
+      const cleanedContent = generatedContent.replace(/```html|```/g, '').trim();
+      setContent(cleanedContent);
+    } catch (err: any) {
+      console.error('Erro ao gerar com IA:', err);
+      setError('Falha ao conectar com a Dra. Flávia. Verifique sua conexão e tente novamente.');
+    } finally {
+      setGeneratingAi(false);
+    }
+  };
+
+  const isAiButtonDisabled = !title.trim() || !summary.trim() || generatingAi;
 
   useEffect(() => {
     const loadData = async () => {
@@ -309,14 +332,37 @@ export default function AdminArticleEditor() {
           </div>
 
           {/* Seção Conteúdo (Rich Text) */}
-          <div className="space-y-2">
-            <label className="text-sm font-bold text-slate-700 flex items-center space-x-2">
-              <FileText size={16} className="text-[#1b6392]" />
-              <span>Conteúdo da Postagem *</span>
-            </label>
-            <RichTextEditor 
-              content={content} 
-              onChange={setContent} 
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-bold text-slate-700 flex items-center space-x-2">
+                <FileText size={16} className="text-[#1b6392]" />
+                <span>Conteúdo da Postagem *</span>
+              </label>
+              
+              <button
+                type="button"
+                onClick={handleGenerateWithAI}
+                disabled={isAiButtonDisabled}
+                className={cn(
+                  "flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-bold transition-all active:scale-95",
+                  isAiButtonDisabled
+                    ? "bg-slate-100 text-slate-400 cursor-not-allowed"
+                    : "bg-gradient-to-r from-[#1b6392] to-indigo-600 text-white shadow-lg shadow-indigo-200"
+                )}
+                title={!title.trim() || !summary.trim() ? "Preencha o título e o resumo para liberar a IA" : "Gerar texto com Dra. Flávia (IA)"}
+              >
+                {generatingAi ? (
+                  <RefreshCw size={14} className="animate-spin" />
+                ) : (
+                  <Sparkles size={14} />
+                )}
+                <span>{generatingAi ? 'Gerando...' : 'Gerar com IA ✨'}</span>
+              </button>
+            </div>
+            
+            <RichTextEditor
+              content={content}
+              onChange={setContent}
               className="min-h-[400px]"
             />
           </div>
