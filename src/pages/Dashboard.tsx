@@ -466,10 +466,10 @@ export default function Dashboard() {
             <motion.div
               onClick={() => navigate(`/library/article/${featuredArticle.id}`)}
               whileTap={{ scale: 0.98 }}
-              className="aspect-[4/3] relative rounded-[2.5rem] overflow-hidden group shadow-lg cursor-pointer bg-slate-200 border-none"
             >
-              <img
-                src={featuredArticle.image_url || 'https://picsum.photos/seed/doc/800/600'}
+              <Card className="aspect-[4/3] relative rounded-[2.5rem] overflow-hidden group shadow-lg cursor-pointer bg-slate-200 border-none p-0">
+                <img
+                  src={featuredArticle.image_url || 'https://picsum.photos/seed/doc/800/600'}
                 alt={featuredArticle.title}
                 referrerPolicy="no-referrer"
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
@@ -486,7 +486,8 @@ export default function Dashboard() {
                 <h4 className="text-2xl font-bold mb-2 leading-tight">{featuredArticle.title}</h4>
                 <p className="text-white/80 text-sm font-medium line-clamp-2">{featuredArticle.summary}</p>
               </div>
-            </motion.div>
+            </Card>
+          </motion.div>
           )}
         </section>
       </main>

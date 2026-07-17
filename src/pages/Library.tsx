@@ -142,9 +142,9 @@ export default function Library() {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
           >
-            <Card 
+            <Card
               onClick={() => navigate(`/library/article/${featuredArticle.id}`)}
-              className="relative aspect-[1/1.1] overflow-hidden rounded-[2.5rem] shadow-xl group cursor-pointer border-none"
+              className="relative aspect-[1/1.1] overflow-hidden rounded-[2.5rem] shadow-xl group cursor-pointer border-none p-0"
             >
               <img 
                 src={featuredArticle.image_url || 'https://picsum.photos/seed/doc/800/1000'} 
