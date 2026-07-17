@@ -7,6 +7,7 @@ import Vaccines from './pages/Vaccines';
 import Milestones from './pages/Milestones';
 import Exams from './pages/Exams';
 import Library from './pages/Library';
+import ArticleView from './pages/ArticleView';
 import Reminders from './pages/Reminders';
 import Profiles from './pages/Profiles';
 import Menu from './pages/Menu';
@@ -165,6 +166,7 @@ function AppContent() {
         <Route path="/ai-support" element={<AISupport />} />
         <Route path="/exams" element={<Exams />} />
         <Route path="/library" element={<Library />} />
+        <Route path="/library/article/:id" element={<ArticleView />} />
         <Route path="/reminders" element={<Reminders />} />
         <Route path="/profiles" element={<Profiles />} />
         <Route path="/milk" element={<MilkManagement />} />

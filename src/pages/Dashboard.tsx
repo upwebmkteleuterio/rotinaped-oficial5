@@ -9,18 +9,30 @@ import { MILESTONES_DATA } from '../data/milestones';
 import { PNI_SCHEDULE } from '../data/vaccineSchedule';
 import NotificationModal from '../components/notifications/NotificationModal';
 import CustomAIIcon from '../components/common/CustomAIIcon';
+import { libraryService, Article } from '@/services/libraryService';
 
 export default function Dashboard() {
   const { children, activeChildId, vaccines, measurements, dailyTips, exams, toggleNotifications, notifications } = useAppStore();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  const [featuredArticle, setFeaturedArticle] = useState<Article | null>(null);
 
   const activeChild = children.find(c => c.id === activeChildId) || children[0];
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 1500);
-    return () => clearTimeout(timer);
+    const loadDashboardData = async () => {
+      try {
+        const articles = await libraryService.getArticles();
+        const featured = articles.find(a => a.is_featured) || articles[0];
+        setFeaturedArticle(featured);
+      } catch (err) {
+        console.error('Erro ao carregar dados do dashboard:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadDashboardData();
   }, []);
   
   // Select a tip based on the day of the year
@@ -439,35 +451,40 @@ export default function Dashboard() {
           </Card>
         </section>
 
-        {/* Daily Tips */}
+        {/* Featured Article Section */}
         <section className="pt-4 space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-2xl font-bold text-slate-800">Dicas de Hoje</h3>
-            <button 
+            <h3 className="text-2xl font-bold text-slate-800 tracking-tight">Destaque da Semana</h3>
+            <button
               onClick={() => navigate('/library')}
               className="text-xs font-bold text-brand-blue uppercase tracking-wider"
             >
               Ver Biblioteca
             </button>
           </div>
-          {todayTip && (
-            <motion.div 
-              onClick={() => navigate('/library')}
+          {featuredArticle && (
+            <motion.div
+              onClick={() => navigate(`/library/article/${featuredArticle.id}`)}
               whileTap={{ scale: 0.98 }}
-              className="aspect-[4/3] relative rounded-[2.5rem] overflow-hidden group shadow-lg cursor-pointer bg-slate-200"
+              className="aspect-[4/3] relative rounded-[2.5rem] overflow-hidden group shadow-lg cursor-pointer bg-slate-200 border-none"
             >
-              <img 
-                src={todayTip.imageUrl} 
-                alt={todayTip.title} 
+              <img
+                src={featuredArticle.image_url || 'https://picsum.photos/seed/doc/800/600'}
+                alt={featuredArticle.title}
                 referrerPolicy="no-referrer"
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-8 text-white">
-                <span className="bg-brand-blue/30 backdrop-blur-md px-3 py-1 rounded-full text-[8px] font-bold uppercase tracking-widest self-start mb-3 border border-white/20">
-                  {todayTip.category}
-                </span>
-                <h4 className="text-2xl font-bold mb-2 leading-tight">{todayTip.title}</h4>
-                <p className="text-white/80 text-sm font-medium line-clamp-2">{todayTip.description}</p>
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="bg-brand-blue/30 backdrop-blur-md px-3 py-1 rounded-full text-[8px] font-bold uppercase tracking-widest border border-white/20">
+                    {featuredArticle.category?.name || 'Biblioteca'}
+                  </span>
+                  <span className="bg-amber-500/80 backdrop-blur-md px-3 py-1 rounded-full text-[8px] font-bold uppercase tracking-widest border border-white/20 flex items-center gap-1">
+                    <Sparkles size={8} /> Destaque
+                  </span>
+                </div>
+                <h4 className="text-2xl font-bold mb-2 leading-tight">{featuredArticle.title}</h4>
+                <p className="text-white/80 text-sm font-medium line-clamp-2">{featuredArticle.summary}</p>
               </div>
             </motion.div>
           )}
