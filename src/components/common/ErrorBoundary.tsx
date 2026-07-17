@@ -1,9 +1,7 @@
-"use client";
-
-import React, { Component, ErrorInfo, ReactNode } from 'react';
+import * as React from 'react';
 
 interface Props {
-  children?: ReactNode;
+  children?: React.ReactNode;
 }
 
 interface State {
@@ -11,22 +9,26 @@ interface State {
   errorMessage: string;
 }
 
-export class ErrorBoundary extends Component<Props, State> {
-  public state: State = {
-    hasError: false,
-    errorMessage: ''
-  };
+export class ErrorBoundary extends (React.Component as any) {
+  constructor(props: Props) {
+    super(props);
+    this.state = {
+      hasError: false,
+      errorMessage: ''
+    };
+  }
 
-  public static getDerivedStateFromError(error: Error): State {
+  static getDerivedStateFromError(error: Error): State {
     return { hasError: true, errorMessage: error.toString() };
   }
 
-  public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('Erro de renderização interceptado:', error, errorInfo);
   }
 
-  public render() {
-    if (this.state.hasError) {
+  render() {
+    const { hasError, errorMessage } = this.state as State;
+    if (hasError) {
       return (
         <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 text-center font-sans">
           <div className="w-16 h-16 bg-rose-100 rounded-full flex items-center justify-center mb-6">
@@ -41,7 +43,7 @@ export class ErrorBoundary extends Component<Props, State> {
           
           <div className="bg-white p-4 rounded-2xl border border-slate-200 w-full max-w-md overflow-x-auto mb-8 shadow-sm">
             <p className="text-xs text-rose-500 font-mono text-left break-words">
-              {this.state.errorMessage}
+              {errorMessage}
             </p>
           </div>
           
@@ -55,6 +57,6 @@ export class ErrorBoundary extends Component<Props, State> {
       );
     }
 
-    return this.props.children;
+    return (this.props as Props).children;
   }
 }

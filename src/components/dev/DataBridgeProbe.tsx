@@ -16,6 +16,7 @@ import {
   Clock
 } from 'lucide-react';
 import { AnimatePresence } from 'motion/react';
+import { cn } from '@/lib/utils';
 
 interface ProbeLog {
   id: string;

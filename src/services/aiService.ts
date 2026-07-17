@@ -37,16 +37,16 @@ export async function generateArticleContent(title: string, summary: string) {
     Por favor, escreva o conteúdo completo deste artigo seguindo as diretrizes da Dra. Flávia e do RotinaPed.
   `;
 
-  const response = await (aiClient as any).models.generateContent({
+  const response = await aiClient.models.generateContent({
     model: "gemini-3-flash-preview",
     contents: [{ role: 'user', parts: [{ text: prompt }] }],
     config: {
       systemInstruction: ARTICLE_GENERATOR_PROMPT,
       temperature: 0.7,
     },
-  });
+  } as any);
 
-  return response.text || "";
+  return (response as any).text || "";
 }
 
 export const AI_PED_SYSTEM_PROMPT = `
