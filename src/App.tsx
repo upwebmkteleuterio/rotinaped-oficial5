@@ -33,6 +33,9 @@ import { AdminLayout } from './components/layout/AdminLayout';
 import AdminUsers from './pages/admin/AdminUsers';
 import AdminPlans from './pages/admin/AdminPlans';
 import BulkNotifications from './pages/admin/BulkNotifications';
+import AdminArticles from './pages/admin/AdminArticles';
+import AdminArticleEditor from './pages/admin/AdminArticleEditor';
+import AdminCategories from './pages/admin/AdminCategories';
 import { Baby } from 'lucide-react';
 
 import { useState, useEffect } from 'react';
@@ -122,6 +125,10 @@ function AppContent() {
           <Routes>
             <Route path="/admin/users" element={<AdminUsers />} />
             <Route path="/admin/plans" element={<AdminPlans />} />
+            <Route path="/admin/articles" element={<AdminArticles />} />
+            <Route path="/admin/articles/new" element={<AdminArticleEditor />} />
+            <Route path="/admin/articles/edit/:id" element={<AdminArticleEditor />} />
+            <Route path="/admin/categories" element={<AdminCategories />} />
             <Route path="/admin/notifications" element={<BulkNotifications />} />
             <Route path="/admin/*" element={<Navigate to="/admin/users" replace />} />
           </Routes>

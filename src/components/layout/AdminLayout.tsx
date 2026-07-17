@@ -7,7 +7,9 @@ import {
   ArrowLeft,
   Menu,
   X,
-  LogOut
+  LogOut,
+  Library,
+  Tags
 } from 'lucide-react';
 
 import { useAuth } from '@/context/AuthContext';
@@ -25,15 +27,25 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   const navigate = useNavigate();
 
   const menuItems = [
-    { 
-      path: '/admin/users', 
-      label: 'Usuários/Clientes', 
-      icon: Users 
+    {
+      path: '/admin/users',
+      label: 'Usuários/Clientes',
+      icon: Users
     },
     {
       path: '/admin/plans',
       label: 'Gestão de Planos',
       icon: CreditCard
+    },
+    {
+      path: '/admin/articles',
+      label: 'Postagens (Biblioteca)',
+      icon: Library
+    },
+    {
+      path: '/admin/categories',
+      label: 'Categorias (Biblioteca)',
+      icon: Tags
     },
     {
       path: '/admin/notifications',
