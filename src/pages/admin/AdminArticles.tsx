@@ -117,8 +117,8 @@ export default function AdminArticles() {
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-        <div className="overflow-x-auto">
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-200">
+        <div className="overflow-x-visible">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200">
@@ -195,9 +195,9 @@ export default function AdminArticles() {
                         <span>{formatDate(article.created_at)}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
-                      <div className="relative inline-block text-left">
-                        <button 
+                    <td className="px-6 py-4 text-right relative" onClick={(e) => e.stopPropagation()}>
+                      <div className="inline-block text-left">
+                        <button
                           onClick={() => setActiveMenuId(activeMenuId === article.id ? null : article.id)}
                           className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-all"
                         >
@@ -208,11 +208,11 @@ export default function AdminArticles() {
                           {activeMenuId === article.id && (
                             <>
                               <div className="fixed inset-0 z-10" onClick={() => setActiveMenuId(null)} />
-                              <motion.div 
+                              <motion.div
                                 initial={{ opacity: 0, scale: 0.95, y: -10 }}
                                 animate={{ opacity: 1, scale: 1, y: 0 }}
                                 exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                                className="absolute right-0 mt-2 w-48 rounded-xl bg-white shadow-xl ring-1 ring-black ring-opacity-5 z-20 overflow-hidden"
+                                className="absolute right-0 mt-2 w-48 rounded-xl bg-white shadow-xl ring-1 ring-black ring-opacity-5 z-50 overflow-hidden border border-slate-100"
                               >
                                 <div className="py-1">
                                   <button
