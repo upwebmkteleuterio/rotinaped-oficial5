@@ -32,7 +32,7 @@ export function calculateGrowthStatus(child: Child, measurements: Measurement[])
     );
   };
 
-  const getAlert = (metricName: string, value: number, whoSource: any, isHeadMetric: boolean = false): GrowthAlert => {
+  const getAlert = (metricName: string, value: number, whoSource: any, isHeadMetric: boolean = false, isIMCMetric: boolean = false): GrowthAlert => {
     const point = getWHOPoint(whoSource, age);
     if (!point || value <= 0) return { metric: metricName, status: 'optimal', message: '', isOutside: false };
 
@@ -51,8 +51,56 @@ export function calculateGrowthStatus(child: Child, measurements: Measurement[])
           isOutside: true 
         };
       }
+    } else if (isIMCMetric) {
+      // IMC (BMI): Upper thresholds are critical for overweight/obesity detection
+      if (value >= point.pz3) {
+        return {
+          metric: metricName, status: 'risk',
+          message: `${metricName} muito acima do esperado (Obesidade).`,
+          isOutside: true
+        };
+      } else if (value >= point.pz2) {
+        return {
+          metric: metricName, status: 'warning',
+          message: `${metricName} acima do esperado (Sobrepeso).`,
+          isOutside: true
+        };
+      } else if (value >= point.pz1) {
+        return {
+          metric: metricName, status: 'optimal',
+          message: `${metricName} no limite superior (Risco de sobrepeso).`,
+          isOutside: false
+        };
+      } else if (value < point.z3) {
+        return { 
+          metric: metricName, status: 'risk', 
+          message: `${metricName} muito abaixo do esperado para a idade.`,
+          isOutside: true 
+        };
+      } else if (value < point.z2) {
+        return { 
+          metric: metricName, status: 'warning', 
+          message: `${metricName} abaixo do esperado (Atenção).`,
+          isOutside: true 
+        };
+      }
     } else {
-      // Common pediatric logic: below z-2 is warning, below z-3 is risk
+      // Weight and Height: check both directions
+      // Upper thresholds: overweight risk
+      if (value >= point.pz3) {
+        return {
+          metric: metricName, status: 'risk',
+          message: `${metricName} muito acima do esperado para a idade.`,
+          isOutside: true
+        };
+      } else if (value >= point.pz2) {
+        return {
+          metric: metricName, status: 'warning',
+          message: `${metricName} acima do esperado para a idade.`,
+          isOutside: true
+        };
+      } else
+      // Lower thresholds: undernutrition risk
       if (value < point.z3) {
         return { 
           metric: metricName, status: 'risk', 
@@ -83,9 +131,9 @@ export function calculateGrowthStatus(child: Child, measurements: Measurement[])
   // Weight alert
   alerts.push(getAlert('Peso', latest.weight, isFemale ? WHO_WEIGHT_DATA.F : WHO_WEIGHT_DATA.M));
   
-  // IMC alert
+  // IMC alert (with IMC-specific thresholds)
   if (latest.imc) {
-    alerts.push(getAlert('IMC', latest.imc, isFemale ? WHO_IMC_DATA.F : WHO_IMC_DATA.M));
+    alerts.push(getAlert('IMC', latest.imc, isFemale ? WHO_IMC_DATA.F : WHO_IMC_DATA.M, false, true));
   }
 
   // Head Circ alert

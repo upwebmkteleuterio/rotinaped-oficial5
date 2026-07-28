@@ -69,7 +69,7 @@ export default function WHOGrowthChart({ child, measurements, metric }: WHOGrowt
         yLabel: 'IMC (kg/m²)',
         data: data,
         minY: 10,
-        maxY: range === '10-19' ? 30 : 25,
+        maxY: range === '10-19' ? 32 : 25,
         yStep: 5
       };
     } else if (metric === 'head') {
@@ -148,68 +148,104 @@ export default function WHOGrowthChart({ child, measurements, metric }: WHOGrowt
   const getY = (v: number) => padding.top + innerHeight - ((v - config.minY) / (config.maxY - config.minY)) * innerHeight;
 
   const isHead = metric === 'head';
+  const data = config.data as any[];
 
-  // Paths for areas
-  const greenPath = isHead 
-    ? [
-        `M ${getX(config.data[0].age)},${getY(config.data[0].zPos2)}`,
-        ...config.data.map((d: any) => `L ${getX(d.age)},${getY(d.zPos2)}`),
-        ...[...config.data].reverse().map((d: any) => `L ${getX(d.age)},${getY(d.zNeg2)}`), 'Z'
-      ].join(' ')
-    : [
-        `M ${getX(config.data[0].age)},${getY(config.maxY)}`,
-        ...config.data.map((d: any) => `L ${getX(d.age)},${getY(d.z2)}`),
-        `L ${getX(config.data[config.data.length - 1].age)},${getY(config.maxY)}`, 'Z'
+  // Helper: Build a line path from z-score field
+  const linePath = (field: string) =>
+    data.map((d: any, i: number) => `${i === 0 ? 'M' : 'L'} ${getX(d.age)},${getY(d[field])}`).join(' ');
+
+  // Helper: Build an area path between two z-score fields (or chart boundary)
+  const areaPath = (upperField: string | number, lowerField: string | number) => {
+    const getVal = (d: any, field: string | number) =>
+      typeof field === 'number' ? field : d[field];
+    return [
+      `M ${getX(data[0].age)},${getY(getVal(data[0], upperField))}`,
+      ...data.map((d: any) => `L ${getX(d.age)},${getY(getVal(d, upperField))}`),
+      ...[...data].reverse().map((d: any) => `L ${getX(d.age)},${getY(getVal(d, lowerField))}`),
+      'Z'
+    ].join(' ');
+  };
+
+  // Helper: Build an area path from a z-score field up to a fixed Y value
+  const areaToBoundary = (field: string, boundary: 'top' | 'bottom') => {
+    const boundaryY = boundary === 'top' ? getY(config.maxY) : getY(config.minY);
+    if (boundary === 'top') {
+      return [
+        `M ${getX(data[0].age)},${boundaryY}`,
+        `L ${getX(data[data.length - 1].age)},${boundaryY}`,
+        ...[...data].reverse().map((d: any) => `L ${getX(d.age)},${getY(d[field])}`),
+        'Z'
       ].join(' ');
-
-  const yellowPath = isHead
-    ? [
-        `M ${getX(config.data[0].age)},${getY(config.data[0].zNeg2)}`,
-        ...config.data.map((d: any) => `L ${getX(d.age)},${getY(d.zNeg2)}`),
-        `L ${getX(config.data[config.data.length - 1].age)},${getY(config.minY)}`,
-        `L ${getX(config.data[0].age)},${getY(config.minY)}`, 'Z'
-      ].join(' ')
-    : [
-        `M ${getX(config.data[0].age)},${getY(config.data[0].z2)}`,
-        ...config.data.map((d: any) => `L ${getX(d.age)},${getY(d.z2)}`),
-        ...[...config.data].reverse().map((d: any) => `L ${getX(d.age)},${getY(d.z3)}`), 'Z'
+    } else {
+      return [
+        `M ${getX(data[0].age)},${getY(data[0][field])}`,
+        ...data.map((d: any) => `L ${getX(d.age)},${getY(d[field])}`),
+        `L ${getX(data[data.length - 1].age)},${boundaryY}`,
+        `L ${getX(data[0].age)},${boundaryY}`,
+        'Z'
       ].join(' ');
+    }
+  };
 
-  const redPath = isHead
-    ? [
-        `M ${getX(config.data[0].age)},${getY(config.maxY)}`,
-        ...config.data.map((d: any) => `L ${getX(d.age)},${getY(d.zPos2)}`),
-        `L ${getX(config.data[config.data.length - 1].age)},${getY(config.maxY)}`, 'Z'
-      ].join(' ')
-    : [
-        `M ${getX(config.data[0].age)},${getY(config.data[0].z3)}`,
-        ...config.data.map((d: any) => `L ${getX(d.age)},${getY(d.z3)}`),
-        `L ${getX(config.data[config.data.length - 1].age)},${getY(config.minY)}`,
-        `L ${getX(config.data[0].age)},${getY(config.minY)}`, 'Z'
-      ].join(' ');
+  // Define all zone paths and lines based on metric type
+  let zonePaths: { d: string; fill: string }[] = [];
+  let lines: { d: string; stroke: string; strokeWidth: number; label: string; field: string }[] = [];
 
-  const z2Line = isHead
-    ? config.data.map((d: any, i: number) => `${i === 0 ? 'M' : 'L'} ${getX(d.age)},${getY(d.zPos2)}`).join(' ')
-    : config.data.map((d: any, i: number) => `${i === 0 ? 'M' : 'L'} ${getX(d.age)},${getY(d.z2)}`).join(' ');
-  
-  const z3Line = isHead
-    ? config.data.map((d: any, i: number) => `${i === 0 ? 'M' : 'L'} ${getX(d.age)},${getY(d.zNeg2)}`).join(' ')
-    : config.data.map((d: any, i: number) => `${i === 0 ? 'M' : 'L'} ${getX(d.age)},${getY(d.z3)}`).join(' ');
+  if (isHead) {
+    // HEAD: 3 zones (same as before) - already bidirectional
+    zonePaths = [
+      { d: areaPath('zPos2', 'zNeg2'), fill: '#c2ebd3' },     // Green: normal
+      { d: areaToBoundary('zNeg2', 'bottom'), fill: '#fcf4b6' }, // Yellow: below -2
+      { d: areaToBoundary('zPos2', 'top'), fill: '#f4c2c2' },   // Red: above +2
+    ];
+    lines = [
+      { d: linePath('zPos2'), stroke: '#000', strokeWidth: 2, label: '+2', field: 'zPos2' },
+      { d: linePath('zNeg2'), stroke: '#000', strokeWidth: 1.5, label: '-2', field: 'zNeg2' },
+    ];
+  } else {
+    // NON-HEAD: 6 zones with full z-score range (-3 to +3)
+    // Colors:
+    //   Red (#f4c2c2): below z-3 and above z+3 (extremes)
+    //   Yellow (#fcf4b6): z-3 to z-2 (low) and z+1 to z+2 (risk of overweight)
+    //   Orange (#fde4c4): z+2 to z+3 (overweight)
+    //   Green (#c2ebd3): z-2 to z+1 (normal)
+    zonePaths = [
+      // Lower zones (bottom to top)
+      { d: areaToBoundary('z3', 'bottom'), fill: '#f4c2c2' },   // Red: below z-3
+      { d: areaPath('z2', 'z3'), fill: '#fcf4b6' },              // Yellow: z-3 to z-2
+      { d: areaPath('pz1', 'z2'), fill: '#c2ebd3' },             // Green: z-2 to z+1 (normal)
+      // Upper zones
+      { d: areaPath('pz2', 'pz1'), fill: '#fcf4b6' },            // Yellow: z+1 to z+2 (risk)
+      { d: areaPath('pz3', 'pz2'), fill: '#fde4c4' },            // Orange: z+2 to z+3 (overweight)
+      { d: areaToBoundary('pz3', 'top'), fill: '#f4c2c2' },      // Red: above z+3 (obesity)
+    ];
+    lines = [
+      { d: linePath('pz3'), stroke: '#000', strokeWidth: 1.5, label: '+3', field: 'pz3' },
+      { d: linePath('pz2'), stroke: '#000', strokeWidth: 1.5, label: '+2', field: 'pz2' },
+      { d: linePath('pz1'), stroke: '#666', strokeWidth: 1, label: '+1', field: 'pz1' },
+      { d: linePath('z2'), stroke: '#000', strokeWidth: 2, label: '-2', field: 'z2' },
+      { d: linePath('z3'), stroke: '#000', strokeWidth: 1.5, label: '-3', field: 'z3' },
+    ];
+  }
 
   const yTicks = [];
   for (let v = config.minY; v <= config.maxY; v += config.yStep) yTicks.push(v);
 
-  const getDiagnosticLabel = (level: 'adequado' | 'baixo' | 'muito_baixo') => {
+  const getDiagnosticLabel = (level: 'adequado' | 'baixo' | 'muito_baixo' | 'sobrepeso' | 'obesidade') => {
     if (metric === 'height') {
       const term = activeRange === '0-2' ? 'Comprimento' : 'Estatura';
       if (level === 'adequado') return `${term} adequado(a) para a idade`;
       if (level === 'baixo') return `Baixo(a) ${term.toLowerCase()} para a idade`;
       if (level === 'muito_baixo') return `Muito baixo(a) ${term.toLowerCase()} para a idade`;
+      if (level === 'sobrepeso') return `${term} acima do esperado`;
+      if (level === 'obesidade') return `${term} muito acima do esperado`;
     }
     const isBMI = metric === 'imc';
     if (level === 'adequado') return isBMI ? 'IMC adequado' : 'Peso adequado';
     if (level === 'baixo') return isBMI ? 'Magreza' : 'Baixo peso';
     if (level === 'muito_baixo') return isBMI ? 'Magreza acentuada' : 'Muito baixo peso';
+    if (level === 'sobrepeso') return isBMI ? 'Sobrepeso' : 'Peso acima do esperado';
+    if (level === 'obesidade') return isBMI ? 'Obesidade' : 'Peso muito acima do esperado';
     return '';
   }
 
@@ -252,9 +288,9 @@ export default function WHOGrowthChart({ child, measurements, metric }: WHOGrowt
           <div className="min-w-[800px] h-[400px] px-4">
             <svg width="100%" height="100%" viewBox={`0 0 ${width} ${height}`} className="font-sans overflow-visible select-none transition-all duration-300">
               {/* Background Surfaces for Areas */}
-              <path d={greenPath} fill="#c2ebd3" opacity="0.8" />
-              <path d={yellowPath} fill="#fcf4b6" opacity="0.8" />
-              <path d={redPath} fill="#f4c2c2" opacity="0.8" />
+              {zonePaths.map((zone, i) => (
+                <path key={`zone-${i}`} d={zone.d} fill={zone.fill} opacity="0.8" />
+              ))}
 
               {/* Grid lines and Axes */}
               <g stroke="#999" strokeWidth="0.5" opacity="0.4">
@@ -273,11 +309,25 @@ export default function WHOGrowthChart({ child, measurements, metric }: WHOGrowt
               </g>
 
               {/* WHO Percentile Curves */}
-              <path d={z2Line} fill="none" stroke="#000" strokeWidth="2" />
-              <path d={z3Line} fill="none" stroke="#000" strokeWidth="1.5" />
-              
-              <text x={width - padding.right + 5} y={getY(config.data[config.data.length-1][isHead ? 'zPos2' : 'z2']) + 4} fontSize="12" fontWeight="bold">{isHead ? '+2' : '-2'}</text>
-              <text x={width - padding.right + 5} y={getY(config.data[config.data.length-1][isHead ? 'zNeg2' : 'z3']) + 4} fontSize="12" fontWeight="bold">{isHead ? '-2' : '-3'}</text>
+              {lines.map((ln, i) => (
+                <path key={`line-${i}`} d={ln.d} fill="none" stroke={ln.stroke} strokeWidth={ln.strokeWidth} />
+              ))}
+
+              {/* Right-side z-score labels */}
+              {lines.map((ln, i) => {
+                const lastPoint = data[data.length - 1];
+                return (
+                  <text
+                    key={`label-${i}`}
+                    x={width - padding.right + 5}
+                    y={getY(lastPoint[ln.field]) + 4}
+                    fontSize="11"
+                    fontWeight="bold"
+                  >
+                    {ln.label}
+                  </text>
+                );
+              })}
 
               {/* Axis Labels and Orientation */}
               <g fill="#333" fontSize="11" textAnchor="middle">
@@ -365,10 +415,25 @@ export default function WHOGrowthChart({ child, measurements, metric }: WHOGrowt
                   </>
                 ) : (
                   <>
+                    {/* Upper thresholds (overweight/obesity) */}
+                    <tr className="bg-[#f4c2c2]">
+                      <td className="py-3 px-4 border-b border-white">≥ Escore-z +3</td>
+                      <td className="py-3 px-4 border-l border-white border-b">{getDiagnosticLabel('obesidade')}</td>
+                    </tr>
+                    <tr className="bg-[#fde4c4]">
+                      <td className="py-3 px-4 border-b border-white leading-tight">≥ Escore-z +2<br className="md:hidden" /> e &lt; Escore-z +3</td>
+                      <td className="py-3 px-4 border-l border-white border-b">{getDiagnosticLabel('sobrepeso')}</td>
+                    </tr>
+                    <tr className="bg-[#fcf4b6]">
+                      <td className="py-3 px-4 border-b border-white leading-tight">≥ Escore-z +1<br className="md:hidden" /> e &lt; Escore-z +2</td>
+                      <td className="py-3 px-4 border-l border-white border-b">Risco de sobrepeso</td>
+                    </tr>
+                    {/* Normal */}
                     <tr className="bg-[#c2ebd3]">
-                      <td className="py-3 px-4 border-b border-white">≥ Escore-z -2</td>
+                      <td className="py-3 px-4 border-b border-white leading-tight">≥ Escore-z -2<br className="md:hidden" /> e &lt; Escore-z +1</td>
                       <td className="py-3 px-4 border-l border-white border-b">{getDiagnosticLabel('adequado')}</td>
                     </tr>
+                    {/* Lower thresholds (underweight) */}
                     <tr className="bg-[#fcf4b6]">
                       <td className="py-3 px-4 border-b border-white leading-tight">≥ Escore-z -3<br className="md:hidden" /> e &lt; Escore-z -2</td>
                       <td className="py-3 px-4 border-l border-white border-b">{getDiagnosticLabel('baixo')}</td>
@@ -389,4 +454,3 @@ export default function WHOGrowthChart({ child, measurements, metric }: WHOGrowt
     </div>
   );
 }
-
