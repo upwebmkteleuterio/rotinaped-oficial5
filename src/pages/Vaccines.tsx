@@ -198,23 +198,29 @@ export default function Vaccines() {
         <section className="space-y-4">
           <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Novos Registros</h3>
           <div className="grid grid-cols-2 gap-4">
-            <button 
+            <button
               onClick={handleUploadClick}
-              className="flex flex-col items-center justify-center gap-4 bg-white border border-slate-100 p-8 rounded-[2.5rem] hover:bg-blue-50/30 active:scale-95 transition-all shadow-sm group"
+              className="flex min-h-[220px] flex-col items-center justify-center gap-4 bg-emerald-50/70 border border-emerald-100 p-6 rounded-[2.5rem] hover:bg-emerald-100/70 active:scale-95 transition-all shadow-sm group"
             >
-              <div className="w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center text-brand-blue group-hover:scale-110 transition-transform">
+              <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-emerald-600 shadow-sm group-hover:scale-110 transition-transform">
                 <Camera className="w-7 h-7" />
               </div>
-              <span className="text-[10px] font-bold text-slate-700 uppercase tracking-widest text-center leading-tight">Importar<br />Caderneta</span>
+              <div className="text-center space-y-2">
+                <span className="block text-[10px] font-bold text-slate-700 uppercase tracking-widest leading-tight">Importar Caderneta</span>
+                <span className="block text-[10px] font-medium normal-case tracking-normal text-slate-500 leading-relaxed">Leia uma foto da caderneta para registrar as vacinas.</span>
+              </div>
             </button>
-            <button 
+            <button
               onClick={openManualModal}
-              className="flex flex-col items-center justify-center gap-4 bg-white border border-slate-100 p-8 rounded-[2.5rem] hover:bg-emerald-50/30 active:scale-95 transition-all shadow-sm group"
+              className="flex min-h-[220px] flex-col items-center justify-center gap-4 bg-emerald-50/70 border border-emerald-100 p-6 rounded-[2.5rem] hover:bg-emerald-100/70 active:scale-95 transition-all shadow-sm group"
             >
-              <div className="w-14 h-14 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-500 group-hover:scale-110 transition-transform">
+              <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-emerald-600 shadow-sm group-hover:scale-110 transition-transform">
                 <PlusCircle className="w-7 h-7" />
               </div>
-              <span className="text-[10px] font-bold text-slate-700 uppercase tracking-widest text-center leading-tight">Registro<br />Manual</span>
+              <div className="text-center space-y-2">
+                <span className="block text-[10px] font-bold text-slate-700 uppercase tracking-widest leading-tight">Registro Manual</span>
+                <span className="block text-[10px] font-medium normal-case tracking-normal text-slate-500 leading-relaxed">Registre uma vacina que não está neste calendário.</span>
+              </div>
             </button>
           </div>
         </section>

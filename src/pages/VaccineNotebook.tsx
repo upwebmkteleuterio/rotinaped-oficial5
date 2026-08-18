@@ -311,6 +311,13 @@ export default function VaccineNotebook() {
           </motion.button>
         )}
 
+        <div className="flex items-start gap-3 bg-slate-100/70 border border-slate-200/70 rounded-3xl px-4 py-3 text-slate-500">
+          <EyeOff className="w-5 h-5 shrink-0 text-slate-400 mt-0.5" />
+          <p className="text-[10px] leading-relaxed">
+            O ícone de olho cortado serve para <strong className="text-slate-600">ocultar uma pendência</strong> que não se aplica à criança. A vacina não é apagada e pode ser exibida novamente pelo mesmo botão.
+          </p>
+        </div>
+
         <section className="relative pl-6 space-y-12 pb-10">
           <div className="absolute left-[34px] top-4 bottom-4 w-0.5 bg-slate-200/50" />
           
