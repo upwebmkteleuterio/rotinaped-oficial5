@@ -2,7 +2,7 @@
 import { createClient } from '@supabase/supabase-js';
 
 const SUPABASE_URL = "https://uorlurdviijaunepstds.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvcmx1cmR2aWlqYXVuZXBzdGRzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEyMTQ5NzcsImV4cCI6MjA5Njc5MDk3N30.V7vqSCubhxX71ako0O2aLFIHn4KxhfMSHfFyF68J-IA";
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_LkF5gWjWNBXHLJvioI02Ow_f69rBP1l";
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
