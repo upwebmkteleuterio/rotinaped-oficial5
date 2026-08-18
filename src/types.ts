@@ -112,6 +112,7 @@ export interface Exam {
   status: 'pending' | 'completed' | 'analyzing';
   laboratory?: string;
   patientName?: string;
+  description?: string;
   fileUrl?: string;
   fileType?: 'pdf' | 'image';
   resultDate?: string;

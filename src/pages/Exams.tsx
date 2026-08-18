@@ -190,6 +190,9 @@ export default function Exams() {
                           {exam.patientName ? `${exam.patientName} • ` : ''}
                           {formatDate(exam.date).toUpperCase()}
                         </span>
+                        {exam.description && (
+                          <span className="text-[10px] text-slate-500 line-clamp-2 mt-1">{exam.description}</span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -276,6 +279,13 @@ export default function Exams() {
                  </div>
                </div>
              </div>
+
+             {selectedExam?.description && (
+               <div className="bg-white p-4 rounded-xl border border-slate-100">
+                 <span className="text-[8px] font-bold text-slate-400 uppercase block mb-1">Descrição</span>
+                 <p className="text-sm text-slate-600 leading-relaxed">{selectedExam.description}</p>
+               </div>
+             )}
 
              <a
                href={selectedExam?.fileUrl}

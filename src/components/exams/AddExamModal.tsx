@@ -28,6 +28,7 @@ export default function AddExamModal() {
   const [name, setName] = useState('');
   const [category, setCategory] = useState<Exam['category']>('laboratoriais');
   const [laboratory, setLaboratory] = useState('');
+  const [description, setDescription] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [file, setFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -77,6 +78,7 @@ export default function AddExamModal() {
         name,
         category,
         laboratory,
+        description,
         date,
         status: 'completed',
         patientName: activeChild?.name,
@@ -91,6 +93,7 @@ export default function AddExamModal() {
       setName('');
       setCategory('laboratoriais');
       setLaboratory('');
+      setDescription('');
       setDate(new Date().toISOString().split('T')[0]);
       setFile(null);
     } catch (error: any) {
@@ -117,6 +120,17 @@ export default function AddExamModal() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl text-slate-800 font-semibold focus:ring-2 focus:ring-brand-blue/20 outline-none transition-all placeholder:text-slate-300"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Descrição do Exame</label>
+          <textarea
+            placeholder="Ex: Exame solicitado para acompanhar..."
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            rows={4}
+            className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl text-slate-800 font-semibold focus:ring-2 focus:ring-brand-blue/20 outline-none transition-all placeholder:text-slate-300 resize-none"
           />
         </div>
 
