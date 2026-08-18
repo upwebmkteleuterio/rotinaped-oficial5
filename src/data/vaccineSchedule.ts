@@ -171,6 +171,18 @@ export const PNI_SCHEDULE: VaccineScheduleItem[] = [
     facilityType: 'SUS'
   },
   {
+    id: 'meningo-c-2',
+    name: 'Meningocócica C',
+    dose: '2ª Dose',
+    ageInMonths: 5,
+    ageLabel: '5 meses',
+    category: 'baby',
+    gender: 'both',
+    description: 'Segunda dose da vacina meningocócica C pelo SUS.',
+    prevents: 'Meningite Meningocócica C',
+    facilityType: 'SUS'
+  },
+  {
     id: 'vip-2',
     name: 'VIP (Poliomielite Inativada)',
     dose: '2ª Dose',
@@ -488,9 +500,9 @@ export const PNI_SCHEDULE: VaccineScheduleItem[] = [
     id: 'meningo-b-reforco-priv',
     name: 'Meningocócica B',
     dose: 'Reforço',
-    ageInMonths: 14,
-    ageLabel: '14 meses',
-    category: 'child',
+    ageInMonths: 12,
+    ageLabel: '12 meses (1 ano)',
+    category: 'baby',
     gender: 'both',
     description: 'Reforço específico para meningite bacteriana tipo B na rede particular.',
     prevents: 'Meningite bacteriana tipo B',
