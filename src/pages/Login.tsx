@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { motion, AnimatePresence } from 'motion/react';
 import { Baby, Eye, EyeOff, Mail, Lock, User, ShieldCheck, Loader2 } from 'lucide-react';
@@ -336,8 +337,18 @@ export default function Login() {
         </form>
       </motion.div>
 
-      {/* Footer copyright */}
-      <div className="text-center text-[10px] text-slate-400">
+      {/* Footer copyright e link da Política de Privacidade */}
+      <div className="text-center text-[10px] text-slate-400 space-y-2">
+        <p className="flex items-center justify-center gap-1.5">
+          <ShieldCheck className="w-3 h-3" />
+          Ao continuar, você declara que leu e aceita nossa
+        </p>
+        <Link
+          to="/politica"
+          className="inline-block font-bold text-[#1b6392] hover:underline underline-offset-2 transition-colors"
+        >
+          Política de Privacidade
+        </Link>
         <p>© {new Date().getFullYear()} RotinaPed. Proteção de dados garantida de acordo com LGPD.</p>
       </div>
     </div>

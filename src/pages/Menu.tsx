@@ -64,8 +64,16 @@ export default function Menu() {
           icon: MessageCircle, 
           color: 'text-brand-blue', 
           bg: 'bg-blue-50', 
-          path: 'https://wa.me/55249888275586?text=Ol%C3%A1%20vim%20atrav%C3%A9s%20do%20app%20e%20gostaria%20e%20preciso%20de%20suporte.', 
-          isExternal: true 
+          path: 'https://wa.me/55249888275586?text=Ol%C3%A1%20vim%20atrav%C3%A9s%20do%20app%20e%20gostaria%20e%20preciso%20de%20suporte.',
+          isExternal: true
+        },
+        {
+          id: 'privacy',
+          label: 'Política de Privacidade',
+          icon: ShieldCheck,
+          color: 'text-emerald-500',
+          bg: 'bg-emerald-50',
+          path: '/politica'
         },
       ]
     }

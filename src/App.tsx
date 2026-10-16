@@ -23,6 +23,7 @@ import TestRunner from './pages/TestRunner';
 import Navbar from './components/layout/Navbar';
 import Login from './pages/Login';
 import ResetPassword from './pages/ResetPassword';
+import PrivacyPolicy from './pages/PrivacyPolicy';
 import SplashScreen from './components/common/SplashScreen';
 
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -82,7 +83,17 @@ function AppContent() {
     return null;
   }
 
-  // 3. Auth Protection Gate
+  // 3. Rotas Públicas (acessíveis sem login)
+  // Política de Privacidade: exigência do Google Play, precisa ser pública e indexável.
+  if (location.pathname === '/politica') {
+    return (
+      <Routes>
+        <Route path="/politica" element={<PrivacyPolicy />} />
+      </Routes>
+    );
+  }
+
+  // 4. Auth Protection Gate
   // Se estiver na rota de reset, permitimos o acesso independente do estado do user
   // (O Supabase injeta a sessão temporária para permitir o updatePassword)
   if (location.pathname === '/reset-password') {
@@ -101,7 +112,7 @@ function AppContent() {
     );
   }
 
-  // 4. Onboarding Gate: Se não houver nenhum filho registrado, força o registro do primeiro filho
+  // 5. Onboarding Gate: Se não houver nenhum filho registrado, força o registro do primeiro filho
   const hasNoProfiles = hasLoadedData && children.length === 0;
   const isAllowedPath = location.pathname === '/profiles' ||
                         location.pathname === '/reset-password' ||
@@ -115,7 +126,7 @@ function AppContent() {
                      location.pathname.startsWith('/ai-support') ||
                      location.pathname === '/dev-test-runner';
 
-  // 5. Verificação de rotas administrativas (bypassa o mobile-container e entra em tela cheia de PC)
+  // 6. Verificação de rotas administrativas (bypassa o mobile-container e entra em tela cheia de PC)
   const isAdminPath = location.pathname.startsWith('/admin');
 
   if (isAdminPath) {
@@ -139,7 +150,7 @@ function AppContent() {
     );
   }
 
-  // 6. Secured Routes (Aplicativo Móvel)
+  // 7. Secured Routes (Aplicativo Móvel)
   return (
     <div className={cn("mobile-container shadow-2xl", hideNavbar && "!pb-0 h-[100dvh] max-h-[100dvh] min-h-0 overflow-hidden overscroll-none")}>
       {simulatedUserId && (
