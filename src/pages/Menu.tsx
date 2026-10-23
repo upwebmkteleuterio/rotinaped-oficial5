@@ -1,17 +1,19 @@
 import { useNavigate } from 'react-router-dom';
 import { Card } from '../components/common/UI';
-import { 
-  FolderOpen, 
-  BookOpen, 
-  Bell, 
-  UserCircle, 
-  ChevronRight, 
-  ShieldCheck, 
-  MessageCircle, 
+import {
+  FolderOpen,
+  BookOpen,
+  Bell,
+  UserCircle,
+  ChevronRight,
+  ShieldCheck,
+  MessageCircle,
   Settings,
   LogOut,
   Utensils,
-  Users
+  Users,
+  FileText,
+  Trash2
 } from 'lucide-react';
 import CustomAIIcon from '../components/common/CustomAIIcon';
 import { motion } from 'motion/react';
@@ -74,6 +76,22 @@ export default function Menu() {
           color: 'text-emerald-500',
           bg: 'bg-emerald-50',
           path: '/politica'
+        },
+        {
+          id: 'terms',
+          label: 'Termos de Uso',
+          icon: FileText,
+          color: 'text-slate-500',
+          bg: 'bg-slate-100',
+          path: '/termos'
+        },
+        {
+          id: 'delete-account',
+          label: 'Excluir Minha Conta',
+          icon: Trash2,
+          color: 'text-rose-500',
+          bg: 'bg-rose-50',
+          path: '/excluir-minha-conta'
         },
       ]
     }

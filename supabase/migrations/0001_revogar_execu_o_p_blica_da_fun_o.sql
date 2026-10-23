@@ -1,0 +1,1 @@
+revoke all on function public.delete_my_account() from public;

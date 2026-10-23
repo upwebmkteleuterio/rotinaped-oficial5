@@ -1,0 +1,1 @@
+revoke execute on function public.delete_my_account() from anon;

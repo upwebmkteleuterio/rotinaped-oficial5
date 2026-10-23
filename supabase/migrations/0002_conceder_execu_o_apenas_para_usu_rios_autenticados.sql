@@ -1,0 +1,1 @@
+grant execute on function public.delete_my_account() to authenticated;

@@ -1,8 +1,5 @@
-import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { motion } from 'motion/react';
 import {
-  ArrowLeft,
   Baby,
   Bell,
   Camera,
@@ -17,92 +14,25 @@ import {
   RefreshCw,
   Server,
   Share2,
-  ShieldCheck,
   Trash2,
   UserCheck,
 } from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
-
-const LAST_UPDATE = '18 de agosto de 2026';
-const CONTACT_EMAIL = 'contato@rotinaped.com.br';
-const SITE_URL = 'rotinaped.com.br';
-
-interface SectionProps {
-  icon: LucideIcon;
-  title: string;
-  children: ReactNode;
-}
-
-function Section({ icon: Icon, title, children }: SectionProps) {
-  return (
-    <section className="space-y-3">
-      <div className="flex items-center gap-3">
-        <div className="w-9 h-9 rounded-xl bg-blue-50 text-[#1b6392] flex items-center justify-center flex-shrink-0">
-          <Icon className="w-5 h-5" />
-        </div>
-        <h2 className="text-base font-bold text-slate-800 tracking-tight">{title}</h2>
-      </div>
-      <div className="text-sm text-slate-600 leading-relaxed space-y-3 sm:pl-12">
-        {children}
-      </div>
-    </section>
-  );
-}
-
-function Bullets({ items }: { items: string[] }) {
-  return (
-    <ul className="list-disc pl-5 space-y-1.5">
-      {items.map((item) => (
-        <li key={item}>{item}</li>
-      ))}
-    </ul>
-  );
-}
+import {
+  Bullets,
+  CONTACT_EMAIL,
+  LAST_UPDATE,
+  LegalPage,
+  Section,
+  SITE_URL,
+} from '@/components/common/LegalPage';
 
 export default function PrivacyPolicy() {
   return (
-    <div className="min-h-screen bg-slate-50">
-      {/* Cabeçalho fixo */}
-      <header className="sticky top-0 z-20 bg-white/90 backdrop-blur-md border-b border-slate-100">
-        <div className="max-w-3xl mx-auto px-5 py-4 flex items-center justify-between gap-4">
-          <Link
-            to="/"
-            className="flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-[#1b6392] transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Voltar ao app
-          </Link>
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 bg-[#1b6392] rounded-lg flex items-center justify-center">
-              <Baby className="w-4 h-4 text-white" />
-            </div>
-            <span className="text-sm font-bold text-slate-800 tracking-tight">
-              Rotina<span className="text-[#1b6392]">Ped</span>
-            </span>
-          </div>
-        </div>
-      </header>
-
-      <main className="max-w-3xl mx-auto px-5 py-8">
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-          className="bg-white rounded-3xl shadow-sm border border-slate-100 p-6 sm:p-10 space-y-8"
-        >
-          {/* Título */}
-          <div className="space-y-3 border-b border-slate-100 pb-6">
-            <div className="inline-flex items-center gap-2 bg-emerald-50 text-emerald-600 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest">
-              <ShieldCheck className="w-3.5 h-3.5" />
-              Documento público
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
-              Política de Privacidade
-            </h1>
-            <p className="text-xs text-slate-400 font-medium">
-              Aplicativo e site RotinaPed &middot; Última atualização: {LAST_UPDATE}
-            </p>
-          </div>
+    <LegalPage
+      badge="Documento público"
+      title="Política de Privacidade"
+      subtitle={`Aplicativo e site RotinaPed · Última atualização: ${LAST_UPDATE}`}
+    >
 
           <Section icon={Info} title="1. Introdução">
             <p>
@@ -325,8 +255,9 @@ export default function PrivacyPolicy() {
               que cadastrou (vacinas, medições, exames, alimentação e lembretes).
             </p>
             <p>
-              Para excluir a sua <strong>conta</strong> e todos os dados a ela vinculados, envie
-              um e-mail para{' '}
+              Para excluir a sua <strong>conta</strong> e todos os dados a ela vinculados,
+              utilize a opção <strong>Menu → Excluir Minha Conta</strong> dentro do aplicativo.
+              Se preferir, a solicitação também pode ser feita por e-mail para{' '}
               <a
                 href={`mailto:${CONTACT_EMAIL}?subject=Exclus%C3%A3o%20de%20Conta`}
                 className="font-bold text-[#1b6392] hover:underline"
@@ -336,9 +267,17 @@ export default function PrivacyPolicy() {
               com o assunto "Exclusão de Conta", informando o e-mail cadastrado.
             </p>
             <p>
-              A exclusão é permanente e remove os dados de cadastro, os perfis das crianças e
-              os registros de saúde em até 30 dias, ressalvadas as informações cuja guarda seja
-              exigida por lei.
+              A exclusão é permanente e remove a conta, os dados de cadastro, os perfis das
+              crianças, os registros de saúde e os arquivos de exames enviados, em até 30 dias,
+              ressalvadas as informações cuja guarda seja exigida por lei.
+            </p>
+            <p>
+              O passo a passo completo, a lista detalhada dos dados excluídos e os prazos de
+              retenção estão na página{' '}
+              <Link to="/excluir-conta" className="font-bold text-[#1b6392] hover:underline">
+                Exclusão de Conta e de Dados
+              </Link>
+              .
             </p>
           </Section>
 
@@ -400,15 +339,6 @@ export default function PrivacyPolicy() {
               sem necessidade de cadastro ou login.
             </p>
           </div>
-        </motion.div>
-
-        <footer className="text-center text-[10px] text-slate-400 py-8">
-          <p>
-            © {new Date().getFullYear()} RotinaPed. Proteção de dados garantida de acordo com a
-            LGPD.
-          </p>
-        </footer>
-      </main>
-    </div>
+    </LegalPage>
   );
 }

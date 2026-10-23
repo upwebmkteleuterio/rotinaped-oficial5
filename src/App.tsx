@@ -24,6 +24,9 @@ import Navbar from './components/layout/Navbar';
 import Login from './pages/Login';
 import ResetPassword from './pages/ResetPassword';
 import PrivacyPolicy from './pages/PrivacyPolicy';
+import TermsOfUse from './pages/TermsOfUse';
+import AccountDeletion from './pages/AccountDeletion';
+import DeleteMyAccount from './pages/DeleteMyAccount';
 import SplashScreen from './components/common/SplashScreen';
 
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -84,11 +87,19 @@ function AppContent() {
   }
 
   // 3. Rotas Públicas (acessíveis sem login)
-  // Política de Privacidade: exigência do Google Play, precisa ser pública e indexável.
-  if (location.pathname === '/politica') {
+  // Política de Privacidade, Termos de Uso e Exclusão de Conta: exigências do Google Play.
+  // Precisam ser públicas, acessíveis fora do aplicativo e sem necessidade de cadastro.
+  const isPublicPath =
+    location.pathname === '/politica' ||
+    location.pathname === '/termos' ||
+    location.pathname === '/excluir-conta';
+
+  if (isPublicPath) {
     return (
       <Routes>
         <Route path="/politica" element={<PrivacyPolicy />} />
+        <Route path="/termos" element={<TermsOfUse />} />
+        <Route path="/excluir-conta" element={<AccountDeletion />} />
       </Routes>
     );
   }
@@ -183,6 +194,7 @@ function AppContent() {
         <Route path="/milk" element={<MilkManagement />} />
         <Route path="/menu" element={<Menu />} />
         <Route path="/support" element={<Support />} />
+        <Route path="/excluir-minha-conta" element={<DeleteMyAccount />} />
         <Route path="/all-exams" element={<AllExams />} />
         <Route path="/all-vaccines" element={<AllVaccines />} />
         <Route path="/vaccine-notebook" element={<VaccineNotebook />} />
