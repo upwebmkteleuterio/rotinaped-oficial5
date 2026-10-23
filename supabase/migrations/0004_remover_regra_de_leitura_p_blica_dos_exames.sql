@@ -1,0 +1,1 @@
+drop policy "Public Read Access for Exams" on storage.objects;

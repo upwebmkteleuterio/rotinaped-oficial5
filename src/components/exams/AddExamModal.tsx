@@ -58,17 +58,13 @@ export default function AddExamModal() {
       const fileName = `${crypto.randomUUID()}.${fileExt}`;
       const filePath = `${activeChildId}/${fileName}`;
 
-      const { data: uploadData, error: uploadError } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from('exams')
         .upload(filePath, file);
 
       if (uploadError) {
         throw new Error(`Erro ao enviar arquivo: ${uploadError.message}`);
       }
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('exams')
-        .getPublicUrl(filePath);
 
       const determinedFileType = file.type.includes('pdf') ? 'pdf' : 'image';
 
@@ -83,7 +79,7 @@ export default function AddExamModal() {
         status: 'completed',
         patientName: activeChild?.name,
         fileType: determinedFileType,
-        fileUrl: publicUrl
+        fileUrl: filePath
       });
 
       setIsUploading(false);

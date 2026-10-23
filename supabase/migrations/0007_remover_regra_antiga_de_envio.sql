@@ -1,0 +1,1 @@
+drop policy "Users can upload their own exams" on storage.objects;

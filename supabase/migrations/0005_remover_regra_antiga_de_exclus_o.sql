@@ -1,0 +1,1 @@
+drop policy "Users can delete their own exams" on storage.objects;

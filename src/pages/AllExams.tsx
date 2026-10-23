@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { cn, formatDate } from '../lib/utils';
+import { openExamFile } from '../lib/examFiles';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -132,14 +133,13 @@ export default function AllExams() {
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <a
-                      href={exam.fileUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <button
+                      type="button"
+                      onClick={() => openExamFile(exam.fileUrl)}
                       className="p-2 text-slate-300 hover:text-brand-blue hover:bg-blue-50 rounded-lg transition-all"
                     >
                       <Download className="w-4 h-4" />
-                    </a>
+                    </button>
                     <button
                       onClick={() => deleteExam(exam.id)}
                       className="p-2 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all"

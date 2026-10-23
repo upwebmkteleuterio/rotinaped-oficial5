@@ -1,6 +1,7 @@
 import { useAppStore } from '../store/useAppStore';
 import HeaderWithChild from '../components/layout/HeaderWithChild';
 import { Card } from '../components/common/UI';
+import { openExamFile } from '../lib/examFiles';
 import { 
   Search, 
   ChevronRight, 
@@ -203,15 +204,16 @@ export default function Exams() {
                     </div>
                   ) : (
                     <div className="flex items-center gap-2 ml-2">
-                      <a
-                        href={exam.fileUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={(e) => e.stopPropagation()}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openExamFile(exam.fileUrl);
+                        }}
                         className="flex items-center gap-1.5 bg-blue-50 text-brand-blue px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider group-active:scale-95 transition-transform hover:bg-blue-100"
                       >
                         <Download className="w-3.5 h-3.5" /> {exam.fileType === 'pdf' ? 'PDF' : 'IMG'}
-                      </a>
+                      </button>
                       <button
                         onClick={(e) => { e.stopPropagation(); deleteExam(exam.id); }}
                         className="p-2 text-slate-200 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all"
@@ -287,14 +289,13 @@ export default function Exams() {
                </div>
              )}
 
-             <a
-               href={selectedExam?.fileUrl}
-               target="_blank"
-               rel="noopener noreferrer"
+             <button
+               type="button"
+               onClick={() => openExamFile(selectedExam?.fileUrl)}
                className="bg-brand-blue text-white w-full py-4 rounded-xl font-bold shadow-lg shadow-blue-100 flex items-center justify-center gap-2 hover:bg-[#134e75] transition-colors"
              >
                <Download className="w-5 h-5" /> Abrir / Baixar Documento
-             </a>
+             </button>
           </div>
         </div>
       </Modal>
